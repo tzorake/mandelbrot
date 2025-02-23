@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { onMounted, useTemplateRef } from 'vue';
-import Vector2, { mult, sum } from './vector2.ts';
+import Vector2 from './vector2.ts';
+import Complex, { cmult, csum } from './complex.ts';
+import Matrix3, { mlmult, mmult, mmultv } from './matrix3.ts';
+import { translate as T, rotate as R, scale as S } from './transform2.ts';
 import ColorInterpolator from './color_interpolator.ts';
 import Color from './color.ts';
-import { Matrix3 } from './matrix.ts';
 
 const canvas = useTemplateRef("canvas");
-const fpsElement = useTemplateRef("fps");
+const fpsElement = useTemplateRef("fpsElement");
 
-const step = 4;
-const max_iter = 500;
-const r = 2.0;
-const zoom = 0.005;
-const radians = Math.PI / 6;
+let step = 4;
+let max_iter = 200;
+let r = 2.0;
+let zoom = 0.005;
+let radians = -Math.PI / 6;
 let canvas_width: number = 0;
 let canvas_height: number = 0;
 let ctx: CanvasRenderingContext2D | null = null;
@@ -20,19 +22,66 @@ let buffer: ArrayBuffer | null = null;
 let pixels: Uint8ClampedArray | null = null;
 let imageData: ImageData | null = null;
 
-onMounted(() => {
-	const rect = canvas.value!.getBoundingClientRect();
-	canvas.value!.width = rect.width;
-	canvas.value!.height = rect.height;
+let translation = new Vector2(0, 0);
+let previous_translation: Vector2 | null = null;
 
-	canvas_width = canvas.value!.width;
-	canvas_height = canvas.value!.height;
-	ctx = canvas.value!.getContext("2d");
+onMounted(() => {
+	if (!canvas.value)
+		return;
+
+	ctx = canvas.value.getContext("2d");
+
+	const rect = canvas.value.getBoundingClientRect();
+	canvas.value.width = rect.width;
+	canvas.value.height = rect.height;
+	canvas_width = canvas.value.width;
+	canvas_height = canvas.value.height;
+
 	buffer = new ArrayBuffer(canvas_width * canvas_height * 4);
 	pixels = new Uint8ClampedArray(buffer);
 	imageData =  new ImageData(pixels, canvas_width, canvas_height);
-	console.info(pixels.length);
+
+	translation.x = 0;
+	translation.y = 0;
 });
+
+function onWheel(event: WheelEvent): void {
+    event.preventDefault();
+
+	zoom = event.deltaY >= 0 ? zoom * 10 / 11 : zoom * 11 / 10; 
+}
+
+let isLeftButtonPressed: boolean = false;
+let startX: number | null = null;
+let startY: number | null = null;
+
+function onMouseDown(event: MouseEvent): void {
+    if (event.button === 0) {
+        isLeftButtonPressed = true;
+		startX = event.clientX;
+        startY = event.clientY;
+		previous_translation = translation.clone();
+	}
+}
+
+function onMouseUp(event: MouseEvent): void {
+    if (event.button === 0) {
+        isLeftButtonPressed = false;
+		startX = null;
+        startY = null;
+		previous_translation = null;
+	}
+}
+
+function onMouseMove(event: MouseEvent): void {
+	if (isLeftButtonPressed && startX !== null && startY !== null && previous_translation !== null) {
+        const deltaX = event.clientX - startX;
+        const deltaY = event.clientY - startY;
+
+		translation.x = previous_translation.x - deltaX
+		translation.y = previous_translation.y - deltaY
+	}
+}
 
 const palette = new ColorInterpolator();
 palette.set(0.0,  Color.fromString("#191817ff"));
@@ -44,15 +93,16 @@ palette.set(0.85, Color.fromString("#0b6e4fff"));
 palette.set(0.95, Color.fromString("#966e4fff"));
 palette.set(1.0,  Color.fromString("#ffffffff"));
 
-function julia(z: Vector2, c: Vector2): { iter: number, z: Vector2 }
-{
+function julia(zx: number, zy: number, cx: number, cy: number): { iter: number, z: Complex } {
     let iter = 0;
-	const z_next = z.clone();
+	let z_next = new Complex(zx, zy);
+	let c = new Complex(cx, cy);
     while (z_next.x * z_next.x + z_next.y * z_next.y < r * r && iter < max_iter) {
         iter++;
 
-		mult(z_next, z_next);
-		sum(z_next, c);
+		const z_new = csum(cmult(z_next, z_next), c);
+		z_next.x = z_new.x;
+		z_next.y = z_new.y;
     }
 
     return { iter, z: z_next };
@@ -68,46 +118,24 @@ function smooth(iter: number, z: Vector2): number {
     return max_iter;
 }
 
-function translate(x: number, y: number) {
-	return new Matrix3(
-		1, 0, x, 
-		0, 1, y, 
-		0, 0, 1
-	);
-}
-
-function rotate(v: number) {
-	const c = Math.cos(v);
-	const s = Math.sin(v);
-	
-	return new Matrix3(
-		c, -s, 0, 
-		s,  c, 0, 
-		0,  0, 1
-	);
-}
-
-function scale(v: number) {
-	return new Matrix3(
-		v, 0, 0, 
-		0, v, 0, 
-	    0, 0, 1
-	);
-}
-
 function computeJulia() {
+	const [cx, cy] = [-Math.trunc(canvas_width / 2), -Math.trunc(canvas_height / 2)]
     for (let y = 0; y < canvas_height; y += step) {
 		for (let x = 0; x < canvas_width; x += step) {
-			const z0 = new Vector2(0.0, 0.0);
+			const z0 = new Complex(0.0, 0.0);
 
-			const T = translate(-Math.trunc(canvas_width / 2), -Math.trunc(canvas_height / 2))
-			const R = rotate(radians);
-			const S = scale(zoom);
+			// const T = translate(translation.x, translation.y)
+			// const R = rotate(radians);
+			// const S = scale(zoom);
 
-			const p = new Vector2(x, y)
-			const c = S.mult(R.mult(T)).multv(p); // (S * (R * T))(p)
+			const p = new Vector2(x, y);
+			// const c = S(zoom).mult(R(radians)).mult(T(translation.x + cx, translation.y + cy)).multv(p)
 
-			const { iter, z } = julia(z0, c);
+			const c = mmultv(
+				mlmult(S(zoom), R(radians), T(cx + translation.x, cy + translation.y)),
+				p
+			);
+			const { iter, z } = julia(z0.x, z0.y, c.x, c.y);
 			const ratio = smooth(iter, z) / max_iter;
 			const color = palette.interpolate(ratio);
 			for (let dy = 0; dy < step && y + dy < canvas_height; ++dy) {
@@ -119,12 +147,6 @@ function computeJulia() {
 					pixels![index + 3] = color.alpha;
 				}
 			}
-
-			// const index = (y * canvas_width + (x)) * 4;
-			// pixels![index + 0] = color.red;
-			// pixels![index + 1] = color.green;
-			// pixels![index + 2] = color.blue;
-			// pixels![index + 3] = color.alpha;
 		}
 	}
 
@@ -132,17 +154,14 @@ function computeJulia() {
 }
 
 let prev_timestamp = 0;
-let fps = 60; 
-let frameCount = 0;
 function renderLoop(timestamp: number) {
     const delta_time = timestamp - prev_timestamp;
     prev_timestamp = timestamp;
 
-	frameCount++;
-	fps = Math.round(1000 / (delta_time / frameCount));
-	fpsElement.value!.textContent = `FPS: ${fps}`;
-	frameCount = 0;
-
+	const fps = Math.trunc(1000 / delta_time);
+	if (fpsElement.value)
+		fpsElement.value.textContent = `FPS: ${fps}`;
+	
     update();
     render();
 
@@ -159,18 +178,11 @@ function render() {
 	if (ctx)
 		ctx.putImageData(imageData!, 0, 0);
 }
-
-function updateFPS(currentTime: number) {
-    const elapsedTime = currentTime - prev_timestamp;
-
-
-}
-
 </script>
 
 <template>
-<canvas class="canvas" ref="canvas"></canvas>
-<div class="fps" ref="fps"></div>
+<canvas class="canvas" ref="canvas" @mousewheel="onWheel" @mousedown="onMouseDown" @mouseup="onMouseUp" @mousemove="onMouseMove"></canvas>
+<div class="fps" ref="fpsElement"></div>
 </template>
 
 <style scoped>
@@ -181,8 +193,8 @@ function updateFPS(currentTime: number) {
 
 .fps {
 	position: fixed;
-	top: 10px;
-	left: 10px;
+	bottom: 10px;
+	right: 10px;
 	color: white;
 	background-color: black;
 	padding: 5px;
