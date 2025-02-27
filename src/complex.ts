@@ -11,6 +11,10 @@ export default class Complex {
 		return new Complex(this.x, this.y);
 	}
 
+    static get ZERO() {
+        return new Complex(0, 0);
+    }
+
 	sum(other: Complex): Complex {
 		return new Complex(this.x + other.x, this.y + other.y);
 	}

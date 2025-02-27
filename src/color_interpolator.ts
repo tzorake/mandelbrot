@@ -1,48 +1,71 @@
 import Color from "./color.ts";
 
-export default class ColorInterpolator {
-    private colors: Map<number, Color>;
+function binarySearch(arr: Array<{ value: number, color: Color }>, target: number): number {
+    let left = 0;
+    let right = arr.length - 1;
 
-    constructor() {
-        this.colors = new Map<number, Color>();
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const midValue = arr[mid].value;
+
+        if (midValue >= target) {
+            if (mid === 0 || arr[mid - 1].value < target) {
+                return mid; 
+            }
+            right = mid - 1; 
+        } else {
+            left = mid + 1; 
+        }
     }
 
-    set(value: number, c: Color): void {
-        this.colors.set(value, c);
+    return -1; 
+}
+
+type Entry = { value: number, color: Color };
+
+export default class ColorInterpolator {
+    private colors: Array<Entry>;
+    private sorted = false;
+
+    constructor() {
+        this.colors = [] 
+    }
+
+    set(value: number, color: Color): void {
+        this.colors.push({ value, color });
+        this.sorted = false;
     }
 
     clear(): void {
-        this.colors.clear();
+        this.colors.length = 0;
     }
 
     size(): number {
-        return this.colors.size;
+        return this.colors.length;
     }
 
-    interpolate(t: number): Color {
-        if (this.colors.size === 0)
+    interpolate(t: number): Color { 
+        if (!this.sorted) {
+            this.colors.sort((a, b) => a.value - b.value);
+            this.sorted = true;
+        }
+
+        if (this.colors.length === 0)
             throw new Error("ColorInterpolator: No colors set for interpolation.");
 
-        const sortedKeys = Array.from(this.colors.keys()).sort((a, b) => a - b);
-
-        let index = sortedKeys.findIndex(key => key >= t);
+        // let index = this.colors.findIndex(entry => entry.value >= t);
+        let index = binarySearch(this.colors, t);
 
         if (index === -1)
-            return this.colors.get(sortedKeys[sortedKeys.length - 1])!;
+            return this.colors[this.colors.length - 1].color;
 
         if (index === 0)
-            return this.colors.get(sortedKeys[0])!;
+            return this.colors[0].color;
 
-        const prevKey = sortedKeys[index - 1];
-        const nextKey = sortedKeys[index];
-
-        const t0 = prevKey;
-        const t1 = nextKey;
+        const { value: t0, color: prevColor } = this.colors[index - 1];
+        const { value: t1, color: nextColor } = this.colors[index];
 
         const factor = (t - t0) / (t1 - t0);
-
-        const prevColor = this.colors.get(prevKey)!;
-        const nextColor = this.colors.get(nextKey)!;
 
         return prevColor.mix(nextColor, factor);
     }
