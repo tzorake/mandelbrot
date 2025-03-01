@@ -1,6 +1,6 @@
 import Color from "./color.ts";
 
-function binarySearch(arr: Array<{ value: number, color: Color }>, target: number): number {
+function search(arr: Array<{ value: number, color: Color }>, target: number): number {
     let left = 0;
     let right = arr.length - 1;
 
@@ -53,8 +53,7 @@ export default class ColorInterpolator {
         if (this.colors.length === 0)
             throw new Error("ColorInterpolator: No colors set for interpolation.");
 
-        // let index = this.colors.findIndex(entry => entry.value >= t);
-        let index = binarySearch(this.colors, t);
+        let index = search(this.colors, t);
 
         if (index === -1)
             return this.colors[this.colors.length - 1].color;
@@ -65,8 +64,6 @@ export default class ColorInterpolator {
         const { value: t0, color: prevColor } = this.colors[index - 1];
         const { value: t1, color: nextColor } = this.colors[index];
 
-        const factor = (t - t0) / (t1 - t0);
-
-        return prevColor.mix(nextColor, factor);
+        return prevColor.mix(nextColor, (t - t0) / (t1 - t0));
     }
 }

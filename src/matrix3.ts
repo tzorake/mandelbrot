@@ -1,88 +1,106 @@
+import Arena from "./arena.ts";
 import { close } from "./math.ts";
 import Vector2 from "./vector2.ts";
 
-const ROWS = 3;
-const COLUMNS = 3;
-
 export default class Matrix3 {
-    readonly values: [number, number, number, number, number, number, number, number, number];
+    a: number;
+    b: number;
+    c: number;
+    d: number;
+    e: number;
+    f: number;
+    g: number;
+    h: number;
+    i: number;
+    
+    static arena: Arena<Matrix3> | null = null;
+	static count: number = 0;
 
-    constructor(v1: number, v2: number, v3: number, v4: number, v5: number, v6: number, v7: number, v8: number, v9: number) {
-        this.values = [
-            v1, v2, v3, 
-            v4, v5, v6, 
-            v7, v8, v9
-        ];
+    constructor(a: number = 0, b: number = 0, c: number = 0, d: number = 0, e: number = 0, f: number = 0, g: number = 0, h: number = 0, i: number = 0) {
+        this.a = a;
+        this.b = b;
+        this.c = c;
+        this.d = d;
+        this.e = e;
+        this.f = f;
+        this.g = g;
+        this.h = h;
+        this.i = i;
+		Matrix3.count++;
+    }
+
+    static acquire(a: number = 0, b: number = 0, c: number = 0, d: number = 0, e: number = 0, f: number = 0, g: number = 0, h: number = 0, i: number = 0): Matrix3 {
+        if (Matrix3.arena) {
+			const instance = Matrix3.arena.acquire(); 
+            instance.a = a;
+            instance.b = b;
+            instance.c = c;
+            instance.d = d;
+            instance.e = e;
+            instance.f = f;
+            instance.g = g;
+            instance.h = h;
+            instance.i = i;
+
+			return instance;
+		} else {
+			return new Matrix3(a, b, c, d, e, f, g, h, i);
+		}
     }
 
     clone() {
-        return new Matrix3(...this.values);
+        return Matrix3.acquire(
+            this.a, this.b, this.c, this.d, this.e, this.f, this.g, this.h, this.i, 
+        );
     }
 
     static get ZERO() {
-        return new Matrix3(
-            0, 0, 0, 
-            0, 0, 0, 
-            0, 0, 0
-        );
+        return Matrix3.acquire();
     }
 
     static get IDENTITY() {
-        return new Matrix3(
-            1, 0, 0, 
-            0, 1, 0, 
-            0, 0, 1
-        );
+        return Matrix3.acquire(1, 0, 0, 0, 1, 0, 0, 0, 1);
     }
 
     sum(other: Matrix3): Matrix3 {
-        const values = this.values.map((value, idx) => value + other.values[idx]);
-        
-        return new Matrix3(
-            values[0], values[1], values[2], 
-            values[3], values[4], values[5], 
-            values[6], values[7], values[8]
+        return Matrix3.acquire(
+            this.a + other.a, this.b + other.b, this.c + other.c, 
+            this.d + other.d, this.e + other.e, this.f + other.f, 
+            this.g + other.g, this.h + other.h, this.i + other.i,
         );
     }
 
     mult(other: Matrix3): Matrix3 {
-        const values: number[] = [];
-        for (let i = 0; i < ROWS; ++i) {
-            for (let j = 0; j < COLUMNS; ++j) {
-                let sum = 0;
-                for (let k = 0; k < COLUMNS; ++k)
-                    sum += this.values[i * COLUMNS + k] * other.values[k * COLUMNS + j];
-
-                values.push(sum);
-            }
-        }
-
-        return new Matrix3(
-            values[0], values[1], values[2], 
-            values[3], values[4], values[5], 
-            values[6], values[7], values[8]
+        return Matrix3.acquire(
+            this.a * other.a + this.b * other.d + this.c * other.g,
+            this.a * other.b + this.b * other.e + this.c * other.h,
+            this.a * other.c + this.b * other.f + this.c * other.i,
+            this.d * other.a + this.e * other.d + this.f * other.g,
+            this.d * other.b + this.e * other.e + this.f * other.h,
+            this.d * other.c + this.e * other.f + this.f * other.i,
+            this.g * other.a + this.h * other.d + this.i * other.g,
+            this.g * other.b + this.h * other.e + this.i * other.h,
+            this.g * other.c + this.h * other.f + this.i * other.i,
         );
     }
 
     multv(vec: Vector2): Vector2 {
-        return new Vector2(
-            this.values[0 * COLUMNS + 0] * vec.x + this.values[0 * COLUMNS + 1] * vec.y + this.values[0 * COLUMNS + 2] * 1, 
-            this.values[1 * COLUMNS + 0] * vec.x + this.values[1 * COLUMNS + 1] * vec.y + this.values[1 * COLUMNS + 2] * 1
+		return Vector2.acquire(
+            this.a * vec.x + this.b * vec.y + this.c * 1,
+            this.d * vec.x + this.e * vec.y + this.f * 1
         );
     }
 
     multk(k: number): Matrix3 {
-        return new Matrix3(
-            k * this.values[0], k * this.values[1], k * this.values[2], 
-            k * this.values[3], k * this.values[4], k * this.values[5], 
-            k * this.values[6], k * this.values[7], k * this.values[8]
+        return Matrix3.acquire(
+            k * this.a, k * this.b, k * this.c,
+            k * this.d, k * this.e, k * this.f,
+            k * this.g, k * this.h, k * this.i
         );
     }
 
     determinant(): number {
-        const [a, b, c, d, e, f, g, h, i] = this.values;
-
-        return a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+        return this.a * (this.e * this.i - this.f * this.h) - this.b * (this.d * this.i - this.f * this.g) + this.c * (this.d * this.h - this.e * this.g);
     }
 
     inverse(): Matrix3 | null {
@@ -90,36 +108,32 @@ export default class Matrix3 {
         if (close(det, 0))
             throw new Error("Matrix is singular and cannot be inverted.");
         
-        const [a, b, c, d, e, f, g, h, i] = this.values;
-        const adjugate = [
-            e * i - f * h, c * h - b * i, b * f - c * e,
-            f * g - d * i, a * i - c * g, c * d - a * f,
-            d * h - e * g, b * g - a * h, a * e - b * d
-        ];
-        const inverse = adjugate.map(value => value / det);
-
-        return new Matrix3(
-            inverse[0], inverse[1], inverse[2],
-            inverse[3], inverse[4], inverse[5],
-            inverse[6], inverse[7], inverse[8]
+        return Matrix3.acquire(
+            (this.e * this.i - this.f * this.h) / det,
+            (this.c * this.h - this.b * this.i) / det,
+            (this.b * this.f - this.c * this.e) / det,
+            (this.f * this.g - this.d * this.i) / det,
+            (this.a * this.i - this.c * this.g) / det,
+            (this.c * this.d - this.a * this.f) / det,
+            (this.d * this.h - this.e * this.g) / det,
+            (this.b * this.g - this.a * this.h) / det,
+            (this.a * this.e - this.b * this.d) / det
         );
     }
 
     transpose(): Matrix3 {
-        const [a, b, c, d, e, f, g, h, i] = this.values;
-
-        return new Matrix3(
-            a, d, g,
-            b, e, h,
-            c, f, i
+        return Matrix3.acquire(
+            this.a, this.d, this.g,
+            this.b, this.e, this.h,
+            this.c, this.f, this.i,
         );
     }
 
     neg(): Matrix3 {
-        return new Matrix3(
-            -this.values[0], -this.values[1], -this.values[2],
-            -this.values[3], -this.values[4], -this.values[5],
-            -this.values[6], -this.values[7], -this.values[8]
+        return Matrix3.acquire(
+            -this.a, -this.b, -this.c,
+            -this.d, -this.e, -this.f,
+            -this.g, -this.h, -this.i
         );
     }
 }

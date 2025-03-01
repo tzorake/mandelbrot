@@ -2,12 +2,11 @@
 import { onMounted, useTemplateRef } from 'vue';
 import Vector2 from './vector2.ts';
 import Complex, { cmult, csum } from './complex.ts';
-import Matrix3, { mlmult, mmult, mmultv } from './matrix3.ts';
-import { translate as T, rotate as R, scale as S } from './transform2.ts';
+import Matrix3, { mlmult, mmultv } from './matrix3.ts';
+import { scale as S, rotate as R, translate as T } from './transform2.ts';
 import ColorInterpolator from './color_interpolator.ts';
 import Color from './color.ts';
-
-// TODO: object pool
+import { Arenas } from './arenas.ts';
 
 const canvasElement = useTemplateRef("canvasElement");
 const translationElement = useTemplateRef("translationElement");
@@ -16,13 +15,13 @@ const zoomElement = useTemplateRef("zoomElement");
 const fpsElement = useTemplateRef("fpsElement");
 
 let step = 4;
-let max_iter = 200;
+let maxIter = 200;
 let r = 2.0;
 
 let translation = Vector2.ZERO;
-let previous_translation: Vector2 | null = null;
+let previousTranslation = Vector2.ZERO;
 let zoom = 0.005;
-let radians = -Math.PI / 6;
+let radians = -Math.PI;
 
 let ctx: CanvasRenderingContext2D | null = null;
 let buffer: ArrayBuffer | null = null;
@@ -46,22 +45,19 @@ palette.set(1.0,  Color.fromString("#ffffffff"));
 onMounted(() => {
 	if (canvasElement.value === null)
 		return;
-
 	
 	const rect = canvasElement.value.getBoundingClientRect();
 	canvasElement.value.width = rect.width;
 	canvasElement.value.height = rect.height;
 	
 	const [canvasWidth, canvasHeight] = [canvasElement.value.width, canvasElement.value.height];
-	const [cx, cy] = [Math.trunc(canvasWidth / 2), Math.trunc(canvasHeight / 2)];
-
-	translation.x = cx;
-	translation.y = cy;
 	
 	ctx = canvasElement.value.getContext("2d");
 	buffer = new ArrayBuffer(canvasWidth * canvasHeight * 4);
 	pixels = new Uint8ClampedArray(buffer);
 	imageData =  new ImageData(pixels, canvasWidth, canvasHeight);
+
+	Arenas.instantiate();
 });
 
 function onWheel(event: WheelEvent): void {
@@ -75,7 +71,8 @@ function onMouseDown(event: MouseEvent): void {
         isLeftButtonPressed = true;
 		startX = event.clientX;
         startY = event.clientY;
-		previous_translation = translation.clone();
+		previousTranslation.x = translation.x;
+		previousTranslation.y = translation.y;
 	}
 }
 
@@ -84,40 +81,38 @@ function onMouseUp(event: MouseEvent): void {
         isLeftButtonPressed = false;
 		startX = null;
         startY = null;
-		previous_translation = null;
 	}
 }
 
 function onMouseMove(event: MouseEvent): void {
-	if (isLeftButtonPressed && startX !== null && startY !== null && previous_translation !== null) {
-        const deltaX = event.clientX - startX;
-        const deltaY = event.clientY - startY;
-
-		translation.x = previous_translation.x - deltaX * zoom
-		translation.y = previous_translation.y - deltaY * zoom
+	if (isLeftButtonPressed && startX !== null && startY !== null && previousTranslation !== null) {
+		translation.x = previousTranslation.x - (event.clientX - startX) * zoom
+		translation.y = previousTranslation.y - (event.clientY - startY) * zoom
 	}
 }
 
 function julia(z0_x: number, z0_y: number, c_x: number, c_y: number): { iter: number, z: Complex } {
     let iter = 0;
-	let z_next = new Complex(z0_x, z0_y);
-	let c = new Complex(c_x, c_y);
-    while (z_next.x * z_next.x + z_next.y * z_next.y < r * r && iter < max_iter) {
+	let z = Complex.acquire(z0_x, z0_y);
+	let c = Complex.acquire(c_x, c_y);
+    while (z.x * z.x + z.y * z.y < r * r && iter < maxIter) {
         iter++;
-		z_next = csum(cmult(z_next, z_next), c);
+		csum(cmult(z, z, true), c, true);
     }
 
-    return { iter, z: z_next };
+    return { iter, z };
 }
 
+const LOG_2 = Math.log(2);
+
 function smooth(iter: number, z: Vector2): number {
-    if (iter < max_iter) {
-        const nu = Math.log(Math.log(z.x * z.x + z.y * z.y) / 2 / Math.log(2)) / Math.log(2);
+    if (iter < maxIter) {
+        const nu = Math.log(Math.log(z.x * z.x + z.y * z.y) / 2 / LOG_2) / LOG_2;
 
         return iter + 1 - nu;
     }
 
-    return max_iter;
+    return maxIter;
 }
 
 function computeJulia() {
@@ -129,14 +124,14 @@ function computeJulia() {
     for (let y = 0; y < canvasHeight; y += step) {
 		for (let x = 0; x < canvasWidth; x += step) {
 			const z0 = Complex.ZERO;
-			const p = new Vector2(x, y);
+			const p = Vector2.acquire(x, y);
 			const c = mmultv(
-				mlmult(T(-cx + translation.x, -cy + translation.y), S(zoom), T(-cx, -cy).neg()), 
+				mlmult(R(radians), T(translation.x, translation.y), S(zoom), T(-cx, -cy).neg()), 
 				p
 			);
 
 			const { iter, z } = julia(z0.x, z0.y, c.x, c.y);
-			const ratio = smooth(iter, z) / max_iter;
+			const ratio = smooth(iter, z) / maxIter;
 			const color = palette.interpolate(ratio);
 			for (let dy = 0; dy < step && y + dy < canvasHeight; ++dy) {
 				for (let dx = 0; dx < step && x + dx < canvasWidth; ++dx) {
@@ -147,6 +142,8 @@ function computeJulia() {
 					pixels[index + 3] = color.alpha;
 				}
 			}
+
+			Arenas.releaseAll();
 		}
 	}
 
@@ -174,8 +171,8 @@ function update(_: number) {
 }
 
 function render(_: number) {
-	if (ctx)
-		ctx.putImageData(imageData!, 0, 0);
+	if (ctx && imageData)
+		ctx.putImageData(imageData, 0, 0);
 }
 
 let prevoiusFpsUpdateTimestamp = 0;
@@ -197,6 +194,8 @@ function updateFps(timestamp: number) {
 		const fps = Math.round(1000 / (elapsedTime / frameCount));
 		if (fpsElement.value)
 			fpsElement.value.textContent = `FPS: ${fps}`;
+
+		// console.info(Complex.count, Vector2.count, Matrix3.count, Color.count)
 
 		frameCount = 0;
 		prevoiusFpsUpdateTimestamp = timestamp;
