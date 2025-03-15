@@ -1,6 +1,8 @@
 import Color from "./color.ts";
 
-function search(arr: Array<{ value: number, color: Color }>, target: number): number {
+type Entry = { value: number, color: Color };
+
+function search(arr: Array<Entry>, target: number): number {
     let left = 0;
     let right = arr.length - 1;
 
@@ -20,8 +22,6 @@ function search(arr: Array<{ value: number, color: Color }>, target: number): nu
 
     return -1; 
 }
-
-type Entry = { value: number, color: Color };
 
 export default class ColorInterpolator {
     private colors: Array<Entry>;
@@ -44,7 +44,7 @@ export default class ColorInterpolator {
         return this.colors.length;
     }
 
-    interpolate(t: number): Color { 
+    interpolate(t: number): Color {
         if (!this.sorted) {
             this.colors.sort((a, b) => a.value - b.value);
             this.sorted = true;

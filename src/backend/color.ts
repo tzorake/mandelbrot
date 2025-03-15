@@ -8,14 +8,12 @@ export default class Color {
 	private a: number;
 
 	static arena: Arena<Color> | null = null;
-	static count: number = 0;
 
 	constructor(r: number = 0, g: number = 0, b: number = 0, a: number = 255) {
 		this.r = clamp(Math.trunc(r), 0, 255);
 		this.g = clamp(Math.trunc(g), 0, 255);
 		this.b = clamp(Math.trunc(b), 0, 255);
 		this.a = clamp(Math.trunc(a), 0, 255);
-		Color.count++;
 	}
 
 	static acquire(r: number = 0, g: number = 0, b: number = 0, a: number = 255): Color {

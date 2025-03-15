@@ -5,12 +5,10 @@ export default class Vector2 {
 	y: number;
 
 	static arena: Arena<Vector2> | null = null;
-	static count: number = 0;
 
 	constructor(x: number = 0, y: number = 0) {
 		this.x = x;
 		this.y = y;
-		Vector2.count++;
 	}
 
 	static acquire(x: number = 0, y: number = 0): Vector2 {

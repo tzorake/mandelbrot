@@ -5,12 +5,10 @@ export default class Complex {
 	y: number;
 
 	static arena: Arena<Complex> | null = null;
-	static count: number = 0;
 
 	constructor(x: number = 0, y: number = 0) {
 		this.x = x;
 		this.y = y;
-		Complex.count++;
 	}
 
 	static acquire(x: number = 0, y: number = 0): Complex {

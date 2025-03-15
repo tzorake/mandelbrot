@@ -18,6 +18,10 @@ export default class Arena<T> {
         }
     }
 
+    get size() {
+        return this.objects.length;
+    }
+
     acquire(): T {
         if (this.nextFreeIndex < this.capacity) {
             return this.objects[this.nextFreeIndex++];

@@ -14,7 +14,6 @@ export default class Matrix3 {
     i: number;
     
     static arena: Arena<Matrix3> | null = null;
-	static count: number = 0;
 
     constructor(a: number = 0, b: number = 0, c: number = 0, d: number = 0, e: number = 0, f: number = 0, g: number = 0, h: number = 0, i: number = 0) {
         this.a = a;
@@ -26,7 +25,6 @@ export default class Matrix3 {
         this.g = g;
         this.h = h;
         this.i = i;
-		Matrix3.count++;
     }
 
     static acquire(a: number = 0, b: number = 0, c: number = 0, d: number = 0, e: number = 0, f: number = 0, g: number = 0, h: number = 0, i: number = 0): Matrix3 {
