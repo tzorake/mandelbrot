@@ -6,15 +6,9 @@ import TzCheckBoxControl from './TzCheckBoxControl.vue';
 import TzComboBoxControl from './TzComboBoxControl.vue';
 import TzNumberFieldControl from './TzNumberFieldControl.vue';
 
-class UnknownControl extends Error {
-    constructor() {
-        super("Unknown control");
-    }
-}
-
 const props = defineProps<Control>();
 const emit = defineEmits<{
-    (e: "control:value", controlId: number, value: number): void,
+    (e: "control:value", controlId: number, value: number | boolean): void,
 }>();
 
 const item = computed(() => {
@@ -35,8 +29,6 @@ const item = computed(() => {
             return TzButtonControl;
         } break;
     }
-
-    throw new UnknownControl();
 });
 
 function onInput(controlId: number, value: number) {
@@ -46,11 +38,18 @@ function onInput(controlId: number, value: number) {
 
 <template>
 <component 
-    class="control" 
+    v-if="item"
     v-bind="props" 
+    class="control" 
     :is="item" 
     @control:value="onInput" 
 />
+<div 
+    v-else 
+    class="error"
+>
+    Unsupported control type: {{ props.type }}
+</div>
 </template>
 
 <style scoped>

@@ -7,20 +7,21 @@ import TzIconLoader from './TzIconLoader.vue';
 
 const props = defineProps<Group | ColorPaletteGroup>();
 const emit = defineEmits<{
-    (e: "expanded:group", groupId: number, value: boolean): void,
-    (e: "control:value", groupItemId: number, elementId: number, controlId: number, value: number): void,
+    (e: "group:expanded", groupId: number, value: boolean): void,
+    (e: "control:value", groupItemId: number, elementId: number, controlId: number, value: boolean | number | string): void,
+    (e: "control:color", groupItemId: number, elementId: number, value: string): void,
 }>();
 
 function onExpanded() {
-    emit("expanded:group", props.id, !props.expanded);
+    emit("group:expanded", props.id, !props.expanded);
 }
 
-function onElementInput(elementId: number, controlId: number, value: number) {
+function onElementInput(elementId: number, controlId: number, value: number | boolean) {
     emit("control:value", props.id, elementId, controlId, value);
 }
 
-function onColorInput(elementId: number, controlId: number, value: number) {
-    emit("control:value", props.id, elementId, controlId, value);
+function onColorInput(elementId: number, value: string) {
+    emit("control:color", props.id, elementId, value);
 }
 </script>
 
@@ -45,7 +46,8 @@ function onColorInput(elementId: number, controlId: number, value: number) {
             v-else
             v-for="element in props.elements"
             v-bind="element"
-            @control:value="onColorInput"
+            @control:color="onColorInput"
+            @control:value="onElementInput"
         />
     </div>
 </div>

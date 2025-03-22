@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, useTemplateRef } from 'vue';
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import Vector2 from '../backend/vector2.ts';
 import Complex, { cmult, csum } from '../backend/complex.ts';
-import Matrix3, { mlmult, mmultv } from '../backend/matrix3.ts';
+import { mlmult, mmultv } from '../backend/matrix3.ts';
 import { scale as S, rotate as R, translate as T } from '../backend/transform2.ts';
 import ColorInterpolator from '../backend/colorinterpolator.ts';
 import Color from '../backend/color.ts';
@@ -11,6 +11,7 @@ import type { CanvasView } from './SideBar.ts';
 
 const props = defineProps<CanvasView>();
 const emit = defineEmits<{
+    (e: "step", value: number): void,
     (e: "translation:x", value: number): void,
     (e: "translation:y", value: number): void,
     (e: "zoom", value: number): void,
@@ -20,19 +21,24 @@ const emit = defineEmits<{
 const canvasElement = useTemplateRef("canvasElement");
 const fpsElement = useTemplateRef("fpsElement");
 
-let step = 4;
-let maxIter = 200;
-let r = 2.0;
+let realPart = computed(() => props.realPart);
+let imagPart = computed(() => props.imagPart);
+let escapeRadius = computed(() => props.escapeRadius);
+let maximumIterations = computed(() => props.maximumIterations);
+let detailLevel = computed(() => props.detailLevel);
+let maximumDetailLevel = computed(() => props.maximumDetailLevel);
 
-let translation = Vector2.ZERO;
+let translationX = computed(() => props.translationX);
+let translationY = computed(() => props.translationY);
 let previousTranslation = Vector2.ZERO;
-let zoom = 0.005;
-let radians = -Math.PI;
+let zoom = computed(() => props.zoom);
+let radians = computed(() => props.radians);
+let step = computed(() => props.step);
 
 let ctx: CanvasRenderingContext2D | null = null;
-let buffer: ArrayBuffer | null = null;
-let pixels: Uint8ClampedArray | null = null;
-let imageData: ImageData | null = null;
+let buffer: ArrayBuffer;
+let pixels: Uint8ClampedArray;
+let imageData: ImageData;
 
 let isLeftButtonPressed = false;
 let startX: number | null = null;
@@ -48,28 +54,52 @@ palette.set(0.85, Color.fromString("#0b6e4fff"));
 palette.set(0.95, Color.fromString("#966e4fff"));
 palette.set(1.0,  Color.fromString("#ffffffff"));
 
+let canvasObserver: ResizeObserver;
+let animationFrameHandle: number; 
+
 onMounted(() => {
-	if (canvasElement.value === null)
+	Arenas.instantiate();
+
+	if (canvasElement.value === null) {
+		console.error("canvasElement.value should not be null");
 		return;
-	
+	}
+		
+	ctx = canvasElement.value.getContext("2d");
+
+	canvasObserver = new ResizeObserver(onCanvasResized);
+	canvasObserver.observe(canvasElement.value);
+	onCanvasResized();
+
+	animationFrameHandle = requestAnimationFrame(renderLoop);
+});
+
+onUnmounted(() => {
+	cancelAnimationFrame(animationFrameHandle);
+	Arenas.destroy();
+})
+
+function onCanvasResized() {
+	if (canvasElement.value === null) {
+		console.error("canvasElement.value should not be null");
+		return;
+	}
+
 	const rect = canvasElement.value.getBoundingClientRect();
 	canvasElement.value.width = rect.width;
 	canvasElement.value.height = rect.height;
-	
 	const [canvasWidth, canvasHeight] = [canvasElement.value.width, canvasElement.value.height];
-	
-	ctx = canvasElement.value.getContext("2d");
+
 	buffer = new ArrayBuffer(canvasWidth * canvasHeight * 4);
 	pixels = new Uint8ClampedArray(buffer);
 	imageData =  new ImageData(pixels, canvasWidth, canvasHeight);
-
-	Arenas.instantiate();
-});
+}
 
 function onWheel(event: WheelEvent): void {
     event.preventDefault();
 
-	zoom = event.deltaY >= 0 ? zoom * 10 / 11 : zoom * 11 / 10; 
+	emit("step", detailLevel.value);
+	emit("zoom", event.deltaY >= 0 ? zoom.value * 10 / 11 : zoom.value * 11 / 10);
 }
 
 function onMouseDown(event: MouseEvent): void {
@@ -77,8 +107,8 @@ function onMouseDown(event: MouseEvent): void {
         isLeftButtonPressed = true;
 		startX = event.clientX;
         startY = event.clientY;
-		previousTranslation.x = translation.x;
-		previousTranslation.y = translation.y;
+		previousTranslation.x = translationX.value;
+		previousTranslation.y = translationY.value;
 	}
 }
 
@@ -92,8 +122,9 @@ function onMouseUp(event: MouseEvent): void {
 
 function onMouseMove(event: MouseEvent): void {
 	if (isLeftButtonPressed && startX !== null && startY !== null && previousTranslation !== null) {
-		translation.x = previousTranslation.x - (event.clientX - startX) * zoom
-		translation.y = previousTranslation.y - (event.clientY - startY) * zoom
+		emit("step", detailLevel.value);
+		emit("translation:x", previousTranslation.x - (event.clientX - startX) * zoom.value);
+		emit("translation:y", previousTranslation.y - (event.clientY - startY) * zoom.value);
 	}
 }
 
@@ -101,7 +132,7 @@ function julia(z0_x: number, z0_y: number, c_x: number, c_y: number): { iter: nu
     let iter = 0;
 	let z = Complex.acquire(z0_x, z0_y);
 	let c = Complex.acquire(c_x, c_y);
-    while (z.x * z.x + z.y * z.y < r * r && iter < maxIter) {
+    while (z.x * z.x + z.y * z.y < escapeRadius.value * escapeRadius.value && iter < maximumIterations.value) {
         iter++;
 		csum(cmult(z, z, true), c, true);
     }
@@ -112,35 +143,37 @@ function julia(z0_x: number, z0_y: number, c_x: number, c_y: number): { iter: nu
 const LOG_2 = Math.log(2);
 
 function smooth(iter: number, z: Vector2): number {
-    if (iter < maxIter) {
+    if (iter < maximumIterations.value) {
         const nu = Math.log(Math.log(z.x * z.x + z.y * z.y) / 2 / LOG_2) / LOG_2;
 
         return iter + 1 - nu;
     }
 
-    return maxIter;
+    return maximumIterations.value;
 }
 
 function computeJulia() {
-	if (canvasElement.value === null || pixels === null)
-		return true;
+	if (canvasElement.value === null) {
+		console.error("canvasElement.value should not be null");
+		return false;
+	}
 
 	const [canvasWidth, canvasHeight] = [canvasElement.value.width, canvasElement.value.height];
 	const [cx, cy] = [Math.trunc(canvasWidth / 2), Math.trunc(canvasHeight / 2)];
-    for (let y = 0; y < canvasHeight; y += step) {
-		for (let x = 0; x < canvasWidth; x += step) {
-			const z0 = Complex.ZERO;
+    for (let y = 0; y < canvasHeight; y += step.value) {
+		for (let x = 0; x < canvasWidth; x += step.value) {
+			const z0 = Complex.acquire(realPart.value, imagPart.value);
 			const p = Vector2.acquire(x, y);
 			const c = mmultv(
-				mlmult(R(radians), T(translation.x, translation.y), S(zoom), T(-cx, -cy).neg()), 
+				mlmult(R(radians.value), T(translationX.value, translationY.value), S(zoom.value), T(-cx, -cy).neg()), 
 				p
 			);
 
 			const { iter, z } = julia(z0.x, z0.y, c.x, c.y);
-			const ratio = smooth(iter, z) / maxIter;
+			const ratio = smooth(iter, z) / maximumIterations.value;
 			const color = palette.interpolate(ratio);
-			for (let dy = 0; dy < step && y + dy < canvasHeight; ++dy) {
-				for (let dx = 0; dx < step && x + dx < canvasWidth; ++dx) {
+			for (let dy = 0; dy < step.value && y + dy < canvasHeight; ++dy) {
+				for (let dx = 0; dx < step.value && x + dx < canvasWidth; ++dx) {
 					const index = ((y + dy) * canvasWidth + (x + dx)) * 4;
 					pixels[index + 0] = color.red;
 					pixels[index + 1] = color.green;
@@ -170,15 +203,22 @@ function renderLoop(timestamp: number) {
 	updateFps(timestamp);
 }
 
-requestAnimationFrame(renderLoop);
-
 function update(_: number) {
-	computeJulia();
+	if (computeJulia()) {
+		const newStep = Math.max(step.value - 1, maximumDetailLevel.value)
+		if (newStep !== step.value) {
+			emit("step", newStep);
+		}
+	}
 }
 
 function render(_: number) {
-	if (ctx && imageData)
-		ctx.putImageData(imageData, 0, 0);
+	if (ctx === null) {
+		console.error("ctx should not be null");
+		return;
+	}
+
+	ctx.putImageData(imageData, 0, 0);
 }
 
 let prevoiusFpsUpdateTimestamp = 0;
@@ -192,8 +232,6 @@ function updateFps(timestamp: number) {
 		if (fpsElement.value)
 			fpsElement.value.textContent = `FPS: ${fps}`;
 
-		// console.info(Complex.arena?.size || 0, Vector2.arena?.size || 0, Matrix3.arena?.size || 0, Color.arena?.size || 0);
-
 		frameCount = 0;
 		prevoiusFpsUpdateTimestamp = timestamp;
 	}
@@ -202,7 +240,7 @@ function updateFps(timestamp: number) {
 </script>
 
 <template>
-<div>
+<div class="canvas-view">
     <canvas class="canvas" ref="canvasElement" @mousewheel="onWheel" @mousedown="onMouseDown" @mouseup="onMouseUp" @mousemove="onMouseMove"></canvas>
     <div class="stats">
         <div class="fps" ref="fpsElement"></div>

@@ -4,16 +4,21 @@ import TzGroup from './TzGroup.vue';
 
 const props = defineProps<Segment>();
 const emit = defineEmits<{
-    (e: "expanded:group", segmentId: number, groupId: number, value: boolean): void,
-    (e: "control:value", segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
+    (e: "group:expanded", segmentId: number, groupId: number, value: boolean): void,
+    (e: "control:value", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string): void,
+    (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
 }>();
 
 function onExpanded(segmentId: number, value: boolean) {
-    emit("expanded:group", props.id, segmentId, value);
+    emit("group:expanded", props.id, segmentId, value);
 }
 
-function onInput(groupId: number, elementId: number, controlId: number, value: number) {
+function onInput(groupId: number, elementId: number, controlId: number, value: boolean | number | string) {
     emit("control:value", props.id, groupId, elementId, controlId, value);
+}
+
+function onColorChanged(groupId: number, elementId: number, value: string) {
+    emit("control:color", props.id, groupId, elementId, value);
 }
 </script>
 
@@ -27,8 +32,9 @@ function onInput(groupId: number, elementId: number, controlId: number, value: n
         <TzGroup
             v-bind="group"
             v-for="group in props.groups"
-            @expanded="onExpanded"
+            @group:expanded="onExpanded"
             @control:value="onInput"
+            @control:color="onColorChanged"
         />
     </div>
 </div>

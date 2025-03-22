@@ -1,15 +1,15 @@
-import { ref, type Ref } from "vue";
-import type { ButtonControl, ComboBoxControl, NumberFieldControl, SideBar } from "./SideBar.ts";
+import { computed, ref, type Ref } from "vue";
+import type { ButtonControl, CanvasView, ComboBoxControl, NumberFieldControl, SideBar } from "./SideBar.ts";
 
 export const sideBar: Ref<SideBar> = ref({
     id: 0,
-    expanded: true,
+    expanded: false,
     currentTab: 0,
     tabs: [
         {
             id: 0,
             icon: "",
-            hint: "",
+            text: "",
             segments: [
                 {
                     id: 0,
@@ -60,7 +60,7 @@ export const sideBar: Ref<SideBar> = ref({
                                         {
                                             id: 0,
                                             type: "NumberField",
-                                            value: 0.0
+                                            value: 2.0
                                         } as NumberFieldControl,
                                     ],
                                 },
@@ -79,7 +79,8 @@ export const sideBar: Ref<SideBar> = ref({
                                         {
                                             id: 0,
                                             type: "NumberField",
-                                            value: 0.0
+                                            dataType: "Int",
+                                            value: 500
                                         } as NumberFieldControl,
                                     ],
                                 },
@@ -90,15 +91,41 @@ export const sideBar: Ref<SideBar> = ref({
                             text: "Detail level",
                             expanded: true,
                             elements: [
-                            {
+                                {
                                     id: 0,
+                                    icon: "",
+                                    text: "Step",
+                                    controls: [
+                                        {
+                                            id: 0,
+                                            type: "NumberField",
+                                            value: 20,
+                                            dataType: "Int",
+                                        } as NumberFieldControl,
+                                    ],
+                                },
+                                {
+                                    id: 1,
                                     icon: "",
                                     text: "Detail level",
                                     controls: [
                                         {
                                             id: 0,
                                             type: "NumberField",
-                                            value: 0.0,
+                                            value: 20,
+                                            dataType: "Int",
+                                        } as NumberFieldControl,
+                                    ],
+                                },
+                                {
+                                    id: 2,
+                                    icon: "",
+                                    text: "Maximum detail level",
+                                    controls: [
+                                        {
+                                            id: 0,
+                                            type: "NumberField",
+                                            value: 4,
                                             dataType: "Int",
                                         } as NumberFieldControl,
                                     ],
@@ -107,26 +134,6 @@ export const sideBar: Ref<SideBar> = ref({
                         },
                         {
                             id: 4,
-                            text: "Maximum detail level",
-                            expanded: true,
-                            elements: [
-                            {
-                                    id: 0,
-                                    icon: "",
-                                    text: "Maximum detail level",
-                                    controls: [
-                                        {
-                                            id: 0,
-                                            type: "NumberField",
-                                            value: 0.0,
-                                            dataType: "Int",
-                                        } as NumberFieldControl,
-                                    ],
-                                },
-                            ],
-                        },
-                        {
-                            id: 5,
                             text: "Space",
                             expanded: true,
                             elements: [
@@ -140,23 +147,23 @@ export const sideBar: Ref<SideBar> = ref({
                                             type: "ComboBox",
                                             value: 0,
                                             options: [
-                                                { first: 0,  second: "c" },
+                                                { first: 0, second: "c" },
                                                 { first: 1, second: "z0" },
-                                            ]
+                                            ],
                                         } as ComboBoxControl,
                                     ],
                                 },
                             ],
                         },
                         {
-                            id: 6,
+                            id: 5,
                             type: "ColorPalette",
                             color: "#ffffff",
                             text: "Colors",
                             expanded: true,
                             elements: Array.from({ length: 3 }).map((_, index) => ({
                                 id: index,
-                                color: "#ffffff",
+                                color: index === 0 ? "#ffff00" : index === 1 ? "#00ff00" : "#0000ff",
                                 controls: [
                                     {
                                         id: 0,
@@ -182,7 +189,7 @@ export const sideBar: Ref<SideBar> = ref({
         {
             id: 1,
             icon: "",
-            hint: "",
+            text: "",
             segments: [
                 {
                     id: 0,
@@ -222,3 +229,44 @@ export const sideBar: Ref<SideBar> = ref({
         },
     ],
 });
+
+export const realPart = computed(() => (sideBar.value.tabs[0].segments[0].groups[0].elements[0].controls[0] as NumberFieldControl).value);
+export const imagPart = computed(() => (sideBar.value.tabs[0].segments[0].groups[0].elements[1].controls[0]as NumberFieldControl).value);
+export const escapeRadius = computed(() => (sideBar.value.tabs[0].segments[0].groups[1].elements[0].controls[0] as NumberFieldControl).value);
+export const maximumIterations = computed(() => (sideBar.value.tabs[0].segments[0].groups[2].elements[0].controls[0] as NumberFieldControl).value);
+export const step = computed({
+    get() {
+        return (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value
+    },
+    set(newValue: number) {
+        (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value = newValue;
+    }
+}); // computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value);
+export const detailLevel = computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[1].controls[0]as NumberFieldControl).value);
+export const maximumDetailLevel = computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[2].controls[0] as NumberFieldControl).value);
+
+
+
+export const canvasView = ref({
+    maximumIteration: 200,
+    radius: 2.0,
+
+    translationX: 0,
+    translationY: 0,
+    zoom: 0.005,
+    radians: -Math.PI,
+
+    palette: [
+        { value: 0.00, color: "#191817ff" },
+        { value: 0.03, color: "#785a46ff" },
+        { value: 0.05, color: "#821817ff" },
+        { value: 0.25, color: "#fab364ff" },
+        { value: 0.50, color: "#2b4162ff" },
+        { value: 0.85, color: "#0b6e4fff" },
+        { value: 0.95, color: "#966e4fff" },
+        { value: 1.00, color: "#ffffffff" },
+    ],
+});
+
+
+

@@ -70,7 +70,7 @@ export type Segment = {
 export type Tab = {
     id: number,
     icon: string,
-    hint?: string,
+    text: string,
     segments: Array<Segment>,
 };
 
@@ -86,19 +86,18 @@ export type PaletteColor = string;
 export type PaletteEntry = { value: number, color: PaletteColor };
 
 export type CanvasView = {
-    step: number,
-    maximumIteration: number,
-    radius: number,
+    realPart: number,
+    imagPart: number,
+    escapeRadius: number,
+    maximumIterations: number,
+    detailLevel: number,
+    maximumDetailLevel: number,
 
     translationX: number,
     translationY: number,
     zoom: number,
     radians: number,
+    step: number,
 
     palette: Array<PaletteEntry>,
-};
-
-export type ViewModel = {
-    sideBar: SideBar,
-    canvasView: CanvasView,
 };

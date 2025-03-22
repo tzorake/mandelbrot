@@ -1,59 +1,41 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue';
-import type { Tab } from "./SideBar.ts";
-import { sideBar } from "./ViewModels.ts";
+import { computed, onMounted, ref, useTemplateRef } from 'vue';
+import type { SideBar, Tab } from "./SideBar.ts";
 import TzIconLoader from './TzIconLoader.vue';
 import TzSegment from './TzSegment.vue';
 import { badgeIcon, menuIcon } from './Icons.ts';
 
-const expanded = ref(false);
+const props = defineProps<SideBar>();
+const emit = defineEmits<{
+    (e: "side-bar:current-tab", value: number): void,
+    (e: "side-bar:expanded", value: boolean): void,
+    (e: "group:expanded", segmentId: number, groupId: number, value: boolean): void,
+    (e: "control:value", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string): void,
+    (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
+}>();
 
-function onClick() {
-	expanded.value = !expanded.value;
+function onClick(_: Event) {
+	emit("side-bar:expanded", !props.expanded);
 }
 
-function onExpandClicked(_: Event, value?: boolean) {
-    sideBar.value.expanded = value || !sideBar.value.expanded;
+function onTabClicked(_: Event, tab: Tab) {
+	emit("side-bar:current-tab", tab.id);
+	emit("side-bar:expanded", true);
 }
 
-function onTabClicked(event: Event, tab: Tab) {
-    sideBar.value.currentTab = tab.id;
-    onExpandClicked(event, true);
-}
+const activeTab = computed(() => props.tabs.find(item => item.id === props.currentTab));
+const segments = computed(() => activeTab.value ? activeTab.value.segments : []);
 
 function onGroupExpanded(segmentId: number, groupId: number, value: boolean) {
-    const segment = sideBar.value.tabs[sideBar.value.currentTab].segments.find(item => item.id === segmentId);
-    if (!segment) 
-        return;
-
-    const group = segment.groups.find(item => item.id === groupId);
-    if (!group) 
-        return;
-
-    group.expanded = value;
+    emit("group:expanded", segmentId, groupId, value);
 }
 
-function onInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
-    const segment = sideBar.value.tabs[sideBar.value.currentTab].segments.find(item => item.id === segmentId);
-    if (!segment) 
-        return;
+function onInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string) {
+    emit("control:value", segmentId, groupId, elementId, controlId, value);
+}
 
-    const group = segment.groups.find(item => item.id === groupId);
-    if (!group) 
-        return;
-
-    const element = group.elements.find(item => item.id === elementId);
-    if (!element) 
-        return;
-
-    const control = element.controls.find(item => item.id === controlId);
-    if (!control) 
-        return;
-
-    if (control.type == "Button")
-        return;
-
-    control.value = value;
+function onColorChanged(segmentId: number, groupId: number, elementId: number, value: string) {
+    emit("control:color", segmentId, groupId, elementId, value);
 }
 
 // ====================================================================================================
@@ -121,10 +103,11 @@ function onWheel(event: WheelEvent) {
 
         <div class="side-bar__tabs">
             <div class="side-bar__tab"
-                v-for="tab in sideBar.tabs"
+                v-for="tab in props.tabs"
                 :key="tab.id"
-                :class="{ active: tab.id === sideBar.currentTab }"
-                @click="(event: Event) => onTabClicked(event, tab)">
+                :class="{ 'active': tab.id === props.currentTab }"
+                @click="(event: Event) => onTabClicked(event, tab)"
+            >
                 <div class="side-bar__icon--small">
                     <TzIconLoader :icon="badgeIcon" />
                 </div>
@@ -132,21 +115,22 @@ function onWheel(event: WheelEvent) {
         </div>
 	</div>
 
-    <div class="side-bar__menu" :class="{ active: expanded }">
+    <div class="side-bar__menu" :class="{ 'active': expanded }">
 		<div class="side-bar__header"></div>
 		<div class="side-bar__content">
             <div class="scroll-bar__container" ref="scrollBarContainerElement"  @wheel="onWheel">
-                <div class="scroll-bar__content" ref="scrollBarContentElement" :style="{ top: `-${scrollBarThumbPosition}px` }">
+                <div class="scroll-bar__content" ref="scrollBarContentElement" :style="{ 'top': `-${scrollBarThumbPosition}px` }">
                     <TzSegment 
-                        v-for="segment in sideBar.tabs[sideBar.currentTab].segments"
-                        :key="segment.id"
+                        v-for="segment in segments"
                         v-bind="segment"
-                        @expanded:group="onGroupExpanded"
+                        :key="segment.id"
+                        @group:expanded="onGroupExpanded"
                         @control:value="onInput"
+                        @control:color="onColorChanged"
                     />
                 </div>
                 <div class="scroll-bar__track" ref="scrollBarTrackElement" v-show="scrollBarTrackVisible">
-                    <div class="scroll-bar__thumb" :style="{ height: `${scrollBarThumbElementHeight}px`, top: `${scrollBarThumbPosition}px` }"></div>
+                    <div class="scroll-bar__thumb" :style="{ 'height': `${scrollBarThumbElementHeight}px`, 'top': `${scrollBarThumbPosition}px` }"></div>
                 </div>
             </div>
         </div>

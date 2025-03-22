@@ -5,11 +5,11 @@ import TzLoader from './TzLoader.vue';
 
 const props = defineProps<ColorPaletteElement>();
 const emit = defineEmits<{
-    (e: "control:value", elementId: number, controlId: number, value: number): void,
+    (e: "control:value", elementId: number, controlId: number, value: number | boolean): void,
     (e: "control:color", elementId: number, value: string): void,
 }>();
 
-function onElementInput(controlId: number, value: number) {
+function onElementInput(controlId: number, value: number | boolean) {
     emit("control:value", props.id, controlId, value);
 }
 
@@ -23,6 +23,8 @@ function onColorInput(value: string) {
     <div class="element__label">
         <TzColorPicker 
             :color="props.color" 
+            :wheel-radius="100"
+            :pointer-size="10"
             @control:color="onColorInput" 
         />
     </div>
