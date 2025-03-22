@@ -85,19 +85,22 @@ export type SideBar = {
 export type PaletteColor = string;
 export type PaletteEntry = { value: number, color: PaletteColor };
 
-export type CanvasView = {
-    realPart: number,
-    imagPart: number,
-    escapeRadius: number,
-    maximumIterations: number,
-    detailLevel: number,
-    maximumDetailLevel: number,
+
+export type CanvasViewProps = {
+    palette: Array<PaletteEntry>,
 
     translationX: number,
     translationY: number,
     zoom: number,
     radians: number,
-    step: number,
+}
 
-    palette: Array<PaletteEntry>,
+export type CanvasView = CanvasViewProps & {
+    realPart: number,
+    imagPart: number,
+    escapeRadius: number,
+    maximumIterations: number,
+    step: number,
+    detailLevel: number,
+    maximumDetailLevel: number,
 };

@@ -1,16 +1,115 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { computed } from 'vue';
 import TzCanvasView from './frontend/TzCanvasView.vue';
 import TzSideBar from './frontend/TzSideBar.vue';
-import { canvasView, detailLevel, escapeRadius, imagPart, maximumDetailLevel, maximumIterations, realPart, sideBar, step } from './frontend/ViewModels.ts';
+import { canvasView as canvasViewInitialState, sideBar as sideBarInitialState } from './frontend/models.ts';
+import type { CanvasViewProps, Control, NumberFieldControl, SideBar } from './frontend/types.ts';
+import { usePersistState } from './frontend/usePersistState.ts';
 
-function assert(condition: boolean, message: string): boolean {
-    if (!condition) {
-        console.error(`Assertion failed: ${message}`);
-		return false;
-    }
-	return true;
+const sideBarKey = "SideBar";
+const { state: sideBar } = usePersistState<SideBar>(sideBarKey, sideBarInitialState);
+
+const canvasViewKey = "CanvasView";
+const { state: canvasView} = usePersistState<CanvasViewProps>(canvasViewKey, canvasViewInitialState);
+
+function control<T extends Control>(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number): T | null {
+    const tab = sideBar.value.tabs.find(item => item.id === tabId);
+    if (!tab) 
+        return null;
+
+    const segment = tab.segments.find(item => item.id === segmentId);
+    if (!segment) 
+        return null;
+
+    const group = segment.groups.find(item => item.id === groupId);
+    if (!group) 
+        return null;
+
+    const element = group.elements.find(item => item.id === elementId);
+    if (!element) 
+        return null;
+
+    const control = element.controls.find(item => item.id === controlId);
+    if (!control) 
+        return null;
+
+    return control as T;
 }
+
+const realPart = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 0, 0, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 0.0;
+    }
+
+    return ctl.value;
+});
+const imagPart = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 0, 1, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 0.0;
+    }
+
+    return ctl.value;
+});
+const escapeRadius = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 1, 0, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 0.0;
+    }
+
+    return ctl.value;
+});
+const maximumIterations = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 2, 0, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 0.0;
+    }
+
+    return ctl.value;
+});
+const step = computed({
+    get() {
+        const ctl = control<NumberFieldControl>(0, 0, 3, 0, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return 0;
+        }
+
+        return ctl.value;
+    },
+    set(value: number) {
+        const ctl = control<NumberFieldControl>(0, 0, 3, 0, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return;
+        }
+
+        ctl.value = value;
+    }
+});
+const detailLevel = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 3, 1, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 1;
+    }
+
+    return ctl.value;
+});
+const maximumDetailLevel = computed(() => {
+    const ctl = control<NumberFieldControl>(0, 0, 3, 2, 0);
+    if (ctl == null) {
+        console.error("control should return a valid object");
+        return 1;
+    }
+
+    return ctl.value;
+});
 
 function onCurrentTabChanged(value: number) {
 	sideBar.value.currentTab = value;
@@ -22,48 +121,73 @@ function onSideBarExpandedChanged(value: boolean) {
 
 function onGroupExpandedChanged(segmentId: number, groupId: number, value: boolean) {
     const tab = sideBar.value.tabs.find(item => item.id === sideBar.value.currentTab);
-    if (!assert(tab != undefined, "App.onGroupExpandedChanged: Current tab not found.")) 
+    if (tab == undefined) {
+        console.error((`Current tab not found.`));
         return;
+    }
 
     const segment = tab!.segments.find(item => item.id === segmentId);
-    if (!assert(segment != undefined, `App.onGroupExpandedChanged: Segment with id ${segmentId} not found.`)) 
+    if (segment == undefined) {
+        console.error(`Segment with id ${segmentId} not found.`);
         return;
+    } 
 
     const group = segment!.groups.find(item => item.id === groupId);
-    if (!assert(group != undefined, `App.onGroupExpandedChanged: Group with id ${groupId} not found.`)) 
+    if (group == undefined)  {
+        console.error(`Group with id ${groupId} not found.`);
         return;
+    }
 
 	group!.expanded = value;
 }
 
-function onInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string) {
-    const tab = sideBar.value.tabs.find(item => item.id === sideBar.value.currentTab);
-    if (!tab) 
+function onNumberInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
+    const ctl = control<Control>(sideBar.value.currentTab, segmentId, groupId, elementId, controlId);
+    if (!ctl) 
         return;
 
-    const segment = tab.segments.find(item => item.id === segmentId);
-    if (!segment) 
+    switch (ctl.type) {
+        case "NumberField": {
+            ctl.value = value;
+        } break;
+
+        case "ComboBox": {
+            ctl.value = value;
+        } break;
+
+        default: {
+            console.error("unknown control");
+        }
+    }
+}
+
+function onBooleanInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
+    const ctl = control<Control>(sideBar.value.currentTab, segmentId, groupId, elementId, controlId);
+    if (!ctl) 
         return;
 
-    const group = segment.groups.find(item => item.id === groupId);
-    if (!group) 
+    switch (ctl.type) {
+        case "CheckBox": {
+            ctl.value = value;
+        } break;
+
+        default: {
+            console.error("unknown control");
+        }
+    }
+}
+
+function onStringInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: string) {
+    const ctl = control<Control>(sideBar.value.currentTab, segmentId, groupId, elementId, controlId);
+    if (!ctl) 
         return;
 
-    const element = group.elements.find(item => item.id === elementId);
-    if (!element) 
-        return;
-
-    const control = element.controls.find(item => item.id === controlId);
-    if (!control) 
-        return;
-
-    if (control.type == "Button")
-        return;
-
-    if (typeof value == "string")
-        return;
-
-	control.value = value;
+    switch (ctl.type) {
+        default: {
+            value;
+            console.error("unknown control");
+        }
+    }
 }
 
 function onColorChanged(segmentId: number, groupId: number, elementId: number, value: string) {
@@ -108,23 +232,23 @@ function onZoomChanged(value: number) {
 function onRadiansChanged(value: number) {
 	canvasView.value.radians = value;
 }
-
-onMounted(() => {
-    console.info(maximumIterations.value)
-})
-
 </script>
 
 <template>
 <TzSideBar 
 	v-bind="sideBar"
+    
 	@side-bar:current-tab="onCurrentTabChanged"
 	@side-bar:expanded="onSideBarExpandedChanged"
 	@group:expanded="onGroupExpandedChanged"
-	@control:value="onInput"
+	@control:number="onNumberInput"
+	@control:boolean="onBooleanInput"
+	@control:string="onStringInput"
 	@control:color="onColorChanged"
 />
 <TzCanvasView 
+    v-bind="canvasView"
+
     :realPart="realPart"
     :imagPart="imagPart"
     :escapeRadius="escapeRadius"
@@ -132,7 +256,6 @@ onMounted(() => {
     :step="step"
     :detailLevel="detailLevel"
     :maximumDetailLevel="maximumDetailLevel"
-    v-bind="canvasView"
 
 	@step="onStepChanged"
 	@translation:x="onTranslationXChanged"

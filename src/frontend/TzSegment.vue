@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { Segment } from './SideBar';
+import type { Segment } from './types';
 import TzGroup from './TzGroup.vue';
 
 const props = defineProps<Segment>();
 const emit = defineEmits<{
     (e: "group:expanded", segmentId: number, groupId: number, value: boolean): void,
-    (e: "control:value", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string): void,
+    (e: "control:number", segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
+    (e: "control:boolean", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
+    (e: "control:string", segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
     (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
 }>();
 
@@ -13,8 +15,16 @@ function onExpanded(segmentId: number, value: boolean) {
     emit("group:expanded", props.id, segmentId, value);
 }
 
-function onInput(groupId: number, elementId: number, controlId: number, value: boolean | number | string) {
-    emit("control:value", props.id, groupId, elementId, controlId, value);
+function onNumberInput(groupId: number, elementId: number, controlId: number, value: number) {
+    emit("control:number", props.id, groupId, elementId, controlId, value);
+}
+
+function onBooleanInput(groupId: number, elementId: number, controlId: number, value: boolean) {
+    emit("control:boolean", props.id, groupId, elementId, controlId, value);
+}
+
+function onStringInput(groupId: number, elementId: number, controlId: number, value: string) {
+    emit("control:string", props.id, groupId, elementId, controlId, value);
 }
 
 function onColorChanged(groupId: number, elementId: number, value: string) {
@@ -33,7 +43,9 @@ function onColorChanged(groupId: number, elementId: number, value: string) {
             v-bind="group"
             v-for="group in props.groups"
             @group:expanded="onExpanded"
-            @control:value="onInput"
+            @control:number="onNumberInput"
+            @control:boolean="onBooleanInput"
+            @control:string="onStringInput"
             @control:color="onColorChanged"
         />
     </div>

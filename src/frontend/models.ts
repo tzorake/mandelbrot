@@ -1,14 +1,14 @@
-import { computed, ref, type Ref } from "vue";
-import type { ButtonControl, CanvasView, ComboBoxControl, NumberFieldControl, SideBar } from "./SideBar.ts";
+import type { ButtonControl, CanvasViewProps, ComboBoxControl, NumberFieldControl, SideBar } from "./types.ts";
+import { angleDownIcon, angleUpIcon, badgeIcon, cogTransferIcon, plusIcon } from "./icons.ts";
 
-export const sideBar: Ref<SideBar> = ref({
+export const sideBar: SideBar = {
     id: 0,
     expanded: false,
     currentTab: 0,
     tabs: [
         {
             id: 0,
-            icon: "",
+            icon: cogTransferIcon,
             text: "",
             segments: [
                 {
@@ -158,7 +158,6 @@ export const sideBar: Ref<SideBar> = ref({
                         {
                             id: 5,
                             type: "ColorPalette",
-                            color: "#ffffff",
                             text: "Colors",
                             expanded: true,
                             elements: Array.from({ length: 3 }).map((_, index) => ({
@@ -168,16 +167,24 @@ export const sideBar: Ref<SideBar> = ref({
                                     {
                                         id: 0,
                                         type: "NumberField",
-                                        value: 0.0,
-                                        dataType: "Int",
+                                        value: Math.trunc(1.0 / 6 * (index + 1) * 15) / 10,
+                                        min: 0.0,
+                                        max: 1.0,
                                     } as NumberFieldControl,
                                     {
                                         id: 1,
                                         type: "Button",
+                                        icon: angleUpIcon
                                     } as ButtonControl,
                                     {
                                         id: 2,
                                         type: "Button",
+                                        icon: angleDownIcon
+                                    } as ButtonControl,
+                                    {
+                                        id: 3,
+                                        type: "Button",
+                                        icon: plusIcon
                                     } as ButtonControl,
                                 ],
                             }))
@@ -188,7 +195,7 @@ export const sideBar: Ref<SideBar> = ref({
         },
         {
             id: 1,
-            icon: "",
+            icon: badgeIcon,
             text: "",
             segments: [
                 {
@@ -198,7 +205,6 @@ export const sideBar: Ref<SideBar> = ref({
                         {
                             id: 0,
                             type: "ColorPalette",
-                            color: "#ffffff",
                             text: "Colors",
                             expanded: true,
                             elements: Array.from({ length: 3 }).map((_, index) => ({
@@ -228,29 +234,9 @@ export const sideBar: Ref<SideBar> = ref({
             ],
         },
     ],
-});
+};
 
-export const realPart = computed(() => (sideBar.value.tabs[0].segments[0].groups[0].elements[0].controls[0] as NumberFieldControl).value);
-export const imagPart = computed(() => (sideBar.value.tabs[0].segments[0].groups[0].elements[1].controls[0]as NumberFieldControl).value);
-export const escapeRadius = computed(() => (sideBar.value.tabs[0].segments[0].groups[1].elements[0].controls[0] as NumberFieldControl).value);
-export const maximumIterations = computed(() => (sideBar.value.tabs[0].segments[0].groups[2].elements[0].controls[0] as NumberFieldControl).value);
-export const step = computed({
-    get() {
-        return (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value
-    },
-    set(newValue: number) {
-        (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value = newValue;
-    }
-}); // computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[0].controls[0]as NumberFieldControl).value);
-export const detailLevel = computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[1].controls[0]as NumberFieldControl).value);
-export const maximumDetailLevel = computed(() => (sideBar.value.tabs[0].segments[0].groups[3].elements[2].controls[0] as NumberFieldControl).value);
-
-
-
-export const canvasView = ref({
-    maximumIteration: 200,
-    radius: 2.0,
-
+export const canvasView: CanvasViewProps = {
     translationX: 0,
     translationY: 0,
     zoom: 0.005,
@@ -266,7 +252,20 @@ export const canvasView = ref({
         { value: 0.95, color: "#966e4fff" },
         { value: 1.00, color: "#ffffffff" },
     ],
-});
+};
 
 
+// function save() {
+//     return {
+//         sideBar: JSON.stringify(sideBar.value),
+//         canvasView: JSON.stringify(canvasView.value),
+//     }
+// }
 
+// function restore(string: string) {
+//     const object = JSON.parse(string);
+//     return {
+//         sideBar: object.sideBar,
+//         canvasView: object.canvasView,
+//     };
+// }

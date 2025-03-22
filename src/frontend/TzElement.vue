@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import type { Element } from './SideBar';
+import type { Element } from './types';
 import TzLoader from './TzLoader.vue';
 
 const props = defineProps<Element>();
 const emit = defineEmits<{
-    (e: "control:value", elementId: number, controlId: number, value: number): void,
+    (e: "control:number", elementId: number, controlId: number, value: number): void,
+    (e: "control:boolean", elementId: number, controlId: number, value: boolean): void,
+    (e: "control:string", elementId: number, controlId: number, value: string): void,
 }>();
 
-function onInput(controlId: number, value: number) {
-    emit("control:value", props.id, controlId, value)
+function onNumberInput(controlId: number, value: number) {
+    emit("control:number", props.id, controlId, value)
+}
+
+function onBooleanInput(controlId: number, value: boolean) {
+    emit("control:boolean", props.id, controlId, value)
+}
+
+function onStringInput(controlId: number, value: string) {
+    emit("control:string", props.id, controlId, value)
 }
 </script>
 
@@ -22,7 +32,9 @@ function onInput(controlId: number, value: number) {
         <TzLoader 
             v-for="control in props.controls" 
             v-bind="control" 
-            @control:value="onInput"
+            @control:number="onNumberInput"
+            @control:boolean="onBooleanInput"
+            @control:string="onStringInput"
         />
     </div>
 </div>

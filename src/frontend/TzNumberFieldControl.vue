@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, useTemplateRef } from 'vue';
 import useClickOutside from './useClickOutside.ts';
-import type { NumberFieldControl } from './SideBar.ts';
+import type { NumberFieldControl } from './types.ts';
 
 function clamp(value: number, min: number, max: number): number 
 {

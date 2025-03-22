@@ -1,55 +1,61 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Control } from './SideBar.ts';
 import TzButtonControl from './TzButtonControl.vue';
 import TzCheckBoxControl from './TzCheckBoxControl.vue';
 import TzComboBoxControl from './TzComboBoxControl.vue';
 import TzNumberFieldControl from './TzNumberFieldControl.vue';
+import type { ButtonControl, CheckBoxControl, ComboBoxControl, NumberFieldControl } from './types.ts';
 
-const props = defineProps<Control>();
+const props = defineProps<{ type: string }>();
 const emit = defineEmits<{
-    (e: "control:value", controlId: number, value: number | boolean): void,
+    (e: "control:number", controlId: number, value: number): void,
+    (e: "control:boolean", controlId: number, value: boolean): void,
+    (e: "control:string", controlId: number, value: string): void,
 }>();
 
-const item = computed(() => {
-    switch (props.type) {
-        case "NumberField": {
-            return TzNumberFieldControl;
-        } break;
-
-        case "ComboBox": {
-            return TzComboBoxControl;
-        } break;
-
-        case "CheckBox": {
-            return TzCheckBoxControl;
-        } break;
-
-        case "Button": {
-            return TzButtonControl;
-        } break;
-    }
-});
-
-function onInput(controlId: number, value: number) {
-    emit("control:value", controlId, value);
+function onNumberInput(controlId: number, value: number) {
+    emit("control:number", controlId, value);
 }
+
+function onBooleanInput(controlId: number, value: boolean) {
+    emit("control:boolean", controlId, value);
+}
+
+function onStringInput(controlId: number, value: string) {
+    emit("control:string", controlId, value);
+}
+
 </script>
 
 <template>
 <component 
-    v-if="item"
-    v-bind="props" 
+    :is="TzNumberFieldControl" 
+    v-if="props.type === 'NumberField'" 
+    v-bind="props as NumberFieldControl"
     class="control" 
-    :is="item" 
-    @control:value="onInput" 
-/>
-<div 
-    v-else 
-    class="error"
->
-    Unsupported control type: {{ props.type }}
-</div>
+    @control:value="onNumberInput"
+></component>
+<component 
+    :is="TzComboBoxControl" 
+    v-else-if="props.type === 'ComboBox'" 
+    v-bind="props as ComboBoxControl"
+    class="control" 
+    @control:value="onNumberInput"
+></component>
+<component 
+    :is="TzCheckBoxControl" 
+    v-else-if="props.type === 'CheckBox'" 
+    v-bind="props as CheckBoxControl"
+    class="control" 
+    @control:value="onBooleanInput"
+></component>
+<component 
+    :is="TzButtonControl" 
+    v-else-if="props.type === 'Button'" 
+    v-bind="props as ButtonControl"
+    class="control" 
+    @control:value="onBooleanInput"
+></component>
 </template>
 
 <style scoped>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CheckBoxControl } from './SideBar';
+import type { CheckBoxControl } from './types';
 
 const props = defineProps<CheckBoxControl>();
 const emit = defineEmits<{

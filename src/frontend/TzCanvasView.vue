@@ -7,7 +7,7 @@ import { scale as S, rotate as R, translate as T } from '../backend/transform2.t
 import ColorInterpolator from '../backend/colorinterpolator.ts';
 import Color from '../backend/color.ts';
 import { Arenas } from '../backend/arenas.ts';
-import type { CanvasView } from './SideBar.ts';
+import type { CanvasView } from './types.ts';
 
 const props = defineProps<CanvasView>();
 const emit = defineEmits<{

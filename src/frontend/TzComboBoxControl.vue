@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue';
 import useClickOutside from './useClickOutside.ts';
-import type { ComboBoxControl, ComboBoxControlOption } from './SideBar.ts';
+import type { ComboBoxControl, ComboBoxControlOption } from './types.ts';
 
 const props = defineProps<ComboBoxControl>();
 const emit = defineEmits<{

@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, useTemplateRef } from 'vue';
-import type { SideBar, Tab } from "./SideBar.ts";
+import type { SideBar, Tab } from "./types.ts";
 import TzIconLoader from './TzIconLoader.vue';
 import TzSegment from './TzSegment.vue';
-import { badgeIcon, menuIcon } from './Icons.ts';
+import { menuIcon } from './icons.ts';
 
 const props = defineProps<SideBar>();
 const emit = defineEmits<{
     (e: "side-bar:current-tab", value: number): void,
     (e: "side-bar:expanded", value: boolean): void,
     (e: "group:expanded", segmentId: number, groupId: number, value: boolean): void,
-    (e: "control:value", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string): void,
+    (e: "control:number", segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
+    (e: "control:boolean", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
+    (e: "control:string", segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
     (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
 }>();
 
@@ -20,18 +22,29 @@ function onClick(_: Event) {
 
 function onTabClicked(_: Event, tab: Tab) {
 	emit("side-bar:current-tab", tab.id);
-	emit("side-bar:expanded", true);
+    emit("side-bar:expanded", props.currentTab === tab.id ? !props.expanded : true);
 }
 
-const activeTab = computed(() => props.tabs.find(item => item.id === props.currentTab));
-const segments = computed(() => activeTab.value ? activeTab.value.segments : []);
+const segments = computed(() => {
+    const active = props.tabs.find(item => item.id === props.currentTab);
+
+    return active ? active.segments : [];
+});
 
 function onGroupExpanded(segmentId: number, groupId: number, value: boolean) {
     emit("group:expanded", segmentId, groupId, value);
 }
 
-function onInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean | number | string) {
-    emit("control:value", segmentId, groupId, elementId, controlId, value);
+function onNumberInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
+    emit("control:number", segmentId, groupId, elementId, controlId, value);
+}
+
+function onBooleanInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
+    emit("control:boolean", segmentId, groupId, elementId, controlId, value);
+}
+
+function onStringInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: string) {
+    emit("control:string", segmentId, groupId, elementId, controlId, value);
 }
 
 function onColorChanged(segmentId: number, groupId: number, elementId: number, value: string) {
@@ -109,7 +122,7 @@ function onWheel(event: WheelEvent) {
                 @click="(event: Event) => onTabClicked(event, tab)"
             >
                 <div class="side-bar__icon--small">
-                    <TzIconLoader :icon="badgeIcon" />
+                    <TzIconLoader :icon="tab.icon" />
                 </div>
             </div>
         </div>
@@ -125,7 +138,9 @@ function onWheel(event: WheelEvent) {
                         v-bind="segment"
                         :key="segment.id"
                         @group:expanded="onGroupExpanded"
-                        @control:value="onInput"
+                        @control:number="onNumberInput"
+                        @control:boolean="onBooleanInput"
+                        @control:string="onStringInput"
                         @control:color="onColorChanged"
                     />
                 </div>
