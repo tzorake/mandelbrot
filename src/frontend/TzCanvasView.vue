@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
-import Vector2 from '../backend/vector2.ts';
-import Complex, { cmult, csum } from '../backend/complex.ts';
+import Vector2, { cmult, csum, vec } from '../backend/vector2.ts';
 import { mlmult, mmultv } from '../backend/matrix3.ts';
 import { scale as S, rotate as R, translate as T } from '../backend/transform2.ts';
-import ColorInterpolator from '../backend/colorinterpolator.ts';
 import Color from '../backend/color.ts';
 import { Arenas } from '../backend/arenas.ts';
-import type { CanvasView } from './types.ts';
+import { Space, type CanvasView, type PaletteEntry } from './types.ts';
 
 const props = defineProps<CanvasView>();
 const emit = defineEmits<{
@@ -27,6 +25,8 @@ let escapeRadius = computed(() => props.escapeRadius);
 let maximumIterations = computed(() => props.maximumIterations);
 let detailLevel = computed(() => props.detailLevel);
 let maximumDetailLevel = computed(() => props.maximumDetailLevel);
+let space = computed(() => props.space);
+let palette = computed(() => props.palette);
 
 let translationX = computed(() => props.translationX);
 let translationY = computed(() => props.translationY);
@@ -44,15 +44,49 @@ let isLeftButtonPressed = false;
 let startX: number | null = null;
 let startY: number | null = null;
 
-const palette = new ColorInterpolator();
-palette.set(0.0,  Color.fromString("#191817ff"));
-palette.set(0.03, Color.fromString("#785a46ff"));
-palette.set(0.05, Color.fromString("#821817ff"));
-palette.set(0.25, Color.fromString("#fab364ff"));
-palette.set(0.5,  Color.fromString("#2b4162ff"));
-palette.set(0.85, Color.fromString("#0b6e4fff"));
-palette.set(0.95, Color.fromString("#966e4fff"));
-palette.set(1.0,  Color.fromString("#ffffffff"));
+function search(arr: PaletteEntry[], target: number): number {
+    let left = 0;
+    let right = arr.length - 1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const midValue = arr[mid].value;
+
+        if (midValue >= target) {
+            if (mid === 0 || arr[mid - 1].value < target) {
+                return mid; 
+            }
+            right = mid - 1; 
+        } else {
+            left = mid + 1; 
+        }
+    }
+
+    return -1; 
+}
+
+function interpolate(colors: PaletteEntry[], t: number): Color {
+	// TODO: must not be required
+	// colors.sort((a, b) => a.value - b.value);
+
+	if (colors.length === 0)
+		return Color.acquire(0xff, 0xff, 0xff, 0xff);
+
+	let index = search(colors, t);
+
+	if (index === -1)
+		return Color.fromString(colors[colors.length - 1].color);
+
+	if (index === 0)
+		return Color.fromString(colors[0].color);
+
+	const [c0, c1] = [colors[index - 1], colors[index]]
+
+	const [t0, prevColor] = [c0.value, Color.fromString(c0.color)];
+	const [t1, nextColor] = [c1.value, Color.fromString(c1.color)];
+
+	return prevColor.mix(nextColor, (t - t0) / (t1 - t0));
+}
 
 let canvasObserver: ResizeObserver;
 let animationFrameHandle: number; 
@@ -128,10 +162,10 @@ function onMouseMove(event: MouseEvent): void {
 	}
 }
 
-function julia(z0_x: number, z0_y: number, c_x: number, c_y: number): { iter: number, z: Complex } {
+function julia(z0_x: number, z0_y: number, c_x: number, c_y: number): { iter: number, z: Vector2 } {
     let iter = 0;
-	let z = Complex.acquire(z0_x, z0_y);
-	let c = Complex.acquire(c_x, c_y);
+	let z = Vector2.acquire(z0_x, z0_y);
+	let c = Vector2.acquire(c_x, c_y);
     while (z.x * z.x + z.y * z.y < escapeRadius.value * escapeRadius.value && iter < maximumIterations.value) {
         iter++;
 		csum(cmult(z, z, true), c, true);
@@ -162,16 +196,18 @@ function computeJulia() {
 	const [cx, cy] = [Math.trunc(canvasWidth / 2), Math.trunc(canvasHeight / 2)];
     for (let y = 0; y < canvasHeight; y += step.value) {
 		for (let x = 0; x < canvasWidth; x += step.value) {
-			const z0 = Complex.acquire(realPart.value, imagPart.value);
-			const p = Vector2.acquire(x, y);
-			const c = mmultv(
+			const firstValue = Vector2.acquire(realPart.value, imagPart.value);
+			const secondValue = mmultv(
 				mlmult(R(radians.value), T(translationX.value, translationY.value), S(zoom.value), T(-cx, -cy).neg()), 
-				p
+				vec(x, y)
 			);
+
+			const z0 = space.value === Space.PARAMETER_SPACE ? firstValue : secondValue;
+			const c = space.value === Space.PARAMETER_SPACE ? secondValue : firstValue;
 
 			const { iter, z } = julia(z0.x, z0.y, c.x, c.y);
 			const ratio = smooth(iter, z) / maximumIterations.value;
-			const color = palette.interpolate(ratio);
+			const color = interpolate(palette.value, ratio);
 			for (let dy = 0; dy < step.value && y + dy < canvasHeight; ++dy) {
 				for (let dx = 0; dx < step.value && x + dx < canvasWidth; ++dx) {
 					const index = ((y + dy) * canvasWidth + (x + dx)) * 4;
@@ -198,7 +234,7 @@ function renderLoop(timestamp: number) {
     update(deltaTime);
     render(deltaTime);
 
-    requestAnimationFrame(renderLoop);
+    animationFrameHandle = requestAnimationFrame(renderLoop);
 
 	updateFps(timestamp);
 }

@@ -10,7 +10,7 @@ function clamp(value: number, min: number, max: number): number
 
 const props = defineProps<NumberFieldControl>();
 const emit = defineEmits<{
-    (e: "control:value", controlId: number, value: number): void,
+    (e: "control:number", controlId: number, value: number): void,
 }>();
 
 const numberField = useTemplateRef("number-field");
@@ -49,7 +49,7 @@ function onInput(_: Event) {
             : Infinity
     )
 
-    emit("control:value", props.id, clampedValue);
+    emit("control:number", props.id, clampedValue);
 }
 
 function onClick(_: Event) {

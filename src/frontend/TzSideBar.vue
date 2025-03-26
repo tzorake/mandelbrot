@@ -9,11 +9,11 @@ const props = defineProps<SideBar>();
 const emit = defineEmits<{
     (e: "side-bar:current-tab", value: number): void,
     (e: "side-bar:expanded", value: boolean): void,
-    (e: "group:expanded", segmentId: number, groupId: number, value: boolean): void,
-    (e: "control:number", segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
-    (e: "control:boolean", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
-    (e: "control:string", segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
-    (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
+    (e: "group:expanded", tabId: number, segmentId: number, groupId: number, value: boolean): void,
+    (e: "control:number", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
+    (e: "control:boolean", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
+    (e: "control:string", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
+    (e: "control:color", tabId: number, segmentId: number, groupId: number, elementId: number, value: string): void,
 }>();
 
 function onClick(_: Event) {
@@ -32,23 +32,23 @@ const segments = computed(() => {
 });
 
 function onGroupExpanded(segmentId: number, groupId: number, value: boolean) {
-    emit("group:expanded", segmentId, groupId, value);
+    emit("group:expanded", props.currentTab, segmentId, groupId, value);
 }
 
 function onNumberInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
-    emit("control:number", segmentId, groupId, elementId, controlId, value);
+    emit("control:number", props.currentTab, segmentId, groupId, elementId, controlId, value);
 }
 
 function onBooleanInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
-    emit("control:boolean", segmentId, groupId, elementId, controlId, value);
+    emit("control:boolean", props.currentTab, segmentId, groupId, elementId, controlId, value);
 }
 
 function onStringInput(segmentId: number, groupId: number, elementId: number, controlId: number, value: string) {
-    emit("control:string", segmentId, groupId, elementId, controlId, value);
+    emit("control:string", props.currentTab, segmentId, groupId, elementId, controlId, value);
 }
 
 function onColorChanged(segmentId: number, groupId: number, elementId: number, value: string) {
-    emit("control:color", segmentId, groupId, elementId, value);
+    emit("control:color", props.currentTab, segmentId, groupId, elementId, value);
 }
 
 // ====================================================================================================

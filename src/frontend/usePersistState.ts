@@ -9,25 +9,31 @@ function loadStateFromLocalStorage<T>(stateKey: string): T | null {
   return savedState ? JSON.parse(savedState) : null;
 }
 
-export function usePersistState<T>(stateKey: string, initialState: T) {
-    const state = ref<T>(loadStateFromLocalStorage<T>(stateKey) || initialState);
+export function usePersistState<T>(stateKey: string, initialState: T, enabled: boolean = true) {
+    const state = ref<T>(enabled ? (loadStateFromLocalStorage<T>(stateKey) || initialState) : initialState);
 
     const saveState = () => {
-        saveStateToLocalStorage(stateKey, state.value);
+        if (enabled) {
+            saveStateToLocalStorage(stateKey, state.value);
+        }
     };
 
     const handleBeforeUnload = () => {
-        console.info("handleBeforeUnload")
-        saveState();
+        if (enabled) {
+            console.info("handleBeforeUnload");
+            saveState();
+        }
     };
 
-    onMounted(() => {
-        window.addEventListener('beforeunload', handleBeforeUnload);
-    });
+    if (enabled) {
+        onMounted(() => {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        });
 
-    onUnmounted(() => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-    });
+        onUnmounted(() => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        });
+    }
 
     return {
         state,

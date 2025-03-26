@@ -83,17 +83,23 @@ export type SideBar = {
 };
 
 export type PaletteColor = string;
-export type PaletteEntry = { value: number, color: PaletteColor };
-
+export type PaletteEntry = { id: number, value: number, color: string };
 
 export type CanvasViewProps = {
-    palette: Array<PaletteEntry>,
-
     translationX: number,
     translationY: number,
     zoom: number,
     radians: number,
 }
+
+let iota = 0;
+
+export const Space = {
+    PARAMETER_SPACE: iota++, // 'Parameter Space (c-plane)'
+    DYNAMIC_SPACE:   iota++, // 'Dynamic Space (z-plane)' or 'Julia space'
+} as const;
+
+export type Space = typeof Space[keyof typeof Space];
 
 export type CanvasView = CanvasViewProps & {
     realPart: number,
@@ -103,4 +109,6 @@ export type CanvasView = CanvasViewProps & {
     step: number,
     detailLevel: number,
     maximumDetailLevel: number,
+    palette: Array<PaletteEntry>,
+    space: Space,
 };

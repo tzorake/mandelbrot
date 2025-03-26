@@ -33,28 +33,28 @@ function onStringInput(controlId: number, value: string) {
     v-if="props.type === 'NumberField'" 
     v-bind="props as NumberFieldControl"
     class="control" 
-    @control:value="onNumberInput"
+    @control:number="onNumberInput"
 ></component>
 <component 
     :is="TzComboBoxControl" 
     v-else-if="props.type === 'ComboBox'" 
     v-bind="props as ComboBoxControl"
     class="control" 
-    @control:value="onNumberInput"
+    @control:number="onNumberInput"
 ></component>
 <component 
     :is="TzCheckBoxControl" 
     v-else-if="props.type === 'CheckBox'" 
     v-bind="props as CheckBoxControl"
     class="control" 
-    @control:value="onBooleanInput"
+    @control:boolean="onBooleanInput"
 ></component>
 <component 
     :is="TzButtonControl" 
     v-else-if="props.type === 'Button'" 
     v-bind="props as ButtonControl"
     class="control" 
-    @control:value="onBooleanInput"
+    @control:boolean="onBooleanInput"
 ></component>
 </template>
 

@@ -39,3 +39,37 @@ export default class Vector2 {
 		);
 	}
 }
+
+export function csum(first: Vector2, second: Vector2, inplace: boolean = false): Vector2 {
+	if (inplace) {
+		first.x += second.x;
+		first.y += second.y;
+
+		return first;
+	} else {
+		return Vector2.acquire(
+			first.x + second.x, 
+			first.y + second.y
+		);
+	}
+}
+
+export function cmult(first: Vector2, second: Vector2, inplace: boolean = false): Vector2 {
+	if (inplace) {
+		const x = first.x * second.x - first.y * second.y;
+		const y = first.x * second.y + second.x * first.y;
+		first.x = x;
+		first.y = y;
+
+		return first;
+	} else {
+		return Vector2.acquire(
+			first.x * second.x - first.y * second.y, 
+			first.x * second.y + second.x * first.y
+		);
+	}
+}
+
+export function vec(x: number, y: number) {
+	return Vector2.acquire(x, y);
+}

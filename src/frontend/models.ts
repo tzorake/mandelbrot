@@ -1,6 +1,17 @@
 import type { ButtonControl, CanvasViewProps, ComboBoxControl, NumberFieldControl, SideBar } from "./types.ts";
 import { angleDownIcon, angleUpIcon, badgeIcon, cogTransferIcon, plusIcon } from "./icons.ts";
 
+const palette = [
+    { id: 0, value: 0.00, color: "#191817ff" },
+    { id: 1, value: 0.03, color: "#785a46ff" },
+    { id: 2, value: 0.05, color: "#821817ff" },
+    { id: 3, value: 0.25, color: "#fab364ff" },
+    { id: 4, value: 0.50, color: "#2b4162ff" },
+    { id: 5, value: 0.85, color: "#0b6e4fff" },
+    { id: 6, value: 0.95, color: "#966e4fff" },
+    { id: 7, value: 1.00, color: "#ffffffff" },
+];
+
 export const sideBar: SideBar = {
     id: 0,
     expanded: false,
@@ -80,7 +91,7 @@ export const sideBar: SideBar = {
                                             id: 0,
                                             type: "NumberField",
                                             dataType: "Int",
-                                            value: 500
+                                            value: 200
                                         } as NumberFieldControl,
                                     ],
                                 },
@@ -160,14 +171,14 @@ export const sideBar: SideBar = {
                             type: "ColorPalette",
                             text: "Colors",
                             expanded: true,
-                            elements: Array.from({ length: 3 }).map((_, index) => ({
-                                id: index,
-                                color: index === 0 ? "#ffff00" : index === 1 ? "#00ff00" : "#0000ff",
+                            elements: palette.map(entry => ({  // palette
+                                id: entry.id,
+                                color: entry.color,
                                 controls: [
                                     {
                                         id: 0,
                                         type: "NumberField",
-                                        value: Math.trunc(1.0 / 6 * (index + 1) * 15) / 10,
+                                        value: entry.value,
                                         min: 0.0,
                                         max: 1.0,
                                     } as NumberFieldControl,
@@ -241,31 +252,4 @@ export const canvasView: CanvasViewProps = {
     translationY: 0,
     zoom: 0.005,
     radians: -Math.PI,
-
-    palette: [
-        { value: 0.00, color: "#191817ff" },
-        { value: 0.03, color: "#785a46ff" },
-        { value: 0.05, color: "#821817ff" },
-        { value: 0.25, color: "#fab364ff" },
-        { value: 0.50, color: "#2b4162ff" },
-        { value: 0.85, color: "#0b6e4fff" },
-        { value: 0.95, color: "#966e4fff" },
-        { value: 1.00, color: "#ffffffff" },
-    ],
 };
-
-
-// function save() {
-//     return {
-//         sideBar: JSON.stringify(sideBar.value),
-//         canvasView: JSON.stringify(canvasView.value),
-//     }
-// }
-
-// function restore(string: string) {
-//     const object = JSON.parse(string);
-//     return {
-//         sideBar: object.sideBar,
-//         canvasView: object.canvasView,
-//     };
-// }

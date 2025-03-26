@@ -3,8 +3,12 @@ import type { ButtonControl } from './types';
 import TzIconLoader from './TzIconLoader.vue';
 
 const props = defineProps<ButtonControl>();
+const emit = defineEmits<{
+    (e: "control:boolean", controlId: number, value: boolean): void,
+}>();
 
 function onClick() {
+	emit("control:boolean", props.id, false);
 }
 </script>
 
@@ -34,6 +38,7 @@ function onClick() {
     font-family: var(--font-family);
     font-size: var(--group-font-size);
     color: var(--font-color);
+	padding: 0px;
 }
 
 .button__icon {

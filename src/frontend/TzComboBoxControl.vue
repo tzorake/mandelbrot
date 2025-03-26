@@ -5,11 +5,11 @@ import type { ComboBoxControl, ComboBoxControlOption } from './types.ts';
 
 const props = defineProps<ComboBoxControl>();
 const emit = defineEmits<{
-    (e: "control:value", controlId: number, value: number): void,
+    (e: "control:number", controlId: number, value: number): void,
 }>();
 
 function onInput(_: Event, item: ComboBoxControlOption) {
-    emit("control:value", props.id, item.first);
+    emit("control:number", props.id, item.first);
 }
 
 const modelData = computed(() => { return props.options.find(item => item.first == props.value) });

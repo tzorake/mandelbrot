@@ -3,11 +3,11 @@ import type { CheckBoxControl } from './types';
 
 const props = defineProps<CheckBoxControl>();
 const emit = defineEmits<{
-    (e: "control:value", controlId: number, value: boolean): void,
+    (e: "control:boolean", controlId: number, value: boolean): void,
 }>();
 
 function onInput() {
-    emit("control:value", props.id, !props.value);
+    emit("control:boolean", props.id, !props.value);
 }
 </script>
 
