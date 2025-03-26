@@ -196,12 +196,17 @@ const sharder = `
     }
 `;
 
+let context: GPUCanvasContext | null;
+let device: GPUDevice;
+let bindGroupLayout: GPUBindGroupLayout;
+let pipeline: GPUComputePipeline;
+
 async function initializeComputePipeline() {
     if (!canvasElement.value) {
         return;
     }
 
-    const context = canvasElement.value.getContext("webgpu");
+    context = canvasElement.value.getContext("webgpu");
     if (!context) {
         return;
     }
@@ -212,7 +217,7 @@ async function initializeComputePipeline() {
         return;
     }
 
-    const device = await adapter.requestDevice();
+    device = await adapter.requestDevice();
     context.configure({
         device,
         format: "rgba8unorm",
@@ -221,26 +226,8 @@ async function initializeComputePipeline() {
     });
 
     const module = device.createShaderModule({ code: sharder });
-    const uniformBuffer = device.createBuffer({
-        size: 9 * Float32Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(uniformBuffer, 0 * Float32Array.BYTES_PER_ELEMENT, new Float32Array([props.realPart, props.imagPart, props.escapeRadius]));
-    device.queue.writeBuffer(uniformBuffer, 3 * Float32Array.BYTES_PER_ELEMENT, new Uint32Array([props.maximumIterations]));
-    device.queue.writeBuffer(
-        uniformBuffer, 
-        3 * Float32Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT, 
-        new Float32Array([props.zoom, props.radians, props.translationX, props.translationY, canvasElement.value.width, canvasElement.value.height])
-    );
-    device.queue.writeBuffer(uniformBuffer, 9 * Float32Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT, new Uint32Array([palette.value.length]));
 
-    const paletteBuffer = device.createBuffer({
-        size: paletteEntries.value.length * 5 * Float32Array.BYTES_PER_ELEMENT,
-        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
-    });
-    device.queue.writeBuffer(paletteBuffer, 0, new Float32Array(paletteEntries.value.flatMap(entry => [entry.value, ...entry.color])));
-
-    const bindGroupLayout = device.createBindGroupLayout({
+    bindGroupLayout = device.createBindGroupLayout({
         label: "bindGroupLayout",
         entries: [
             {
@@ -261,29 +248,7 @@ async function initializeComputePipeline() {
         ]
     });
 
-    const texture = context.getCurrentTexture();
-    const bindGroup = device.createBindGroup({
-        label: "bindGroup",
-        layout: bindGroupLayout,
-        entries: [
-            {
-                binding: 0, 
-                resource: { buffer: uniformBuffer },
-            },
-            {
-                binding: 1, 
-                resource: { buffer: paletteBuffer },
-            },
-            {
-                binding: 2,
-                resource: texture.createView({
-                    dimension: "2d",
-                }),
-            },
-        ],
-    });
-
-    const pipeline = device.createComputePipeline({
+    pipeline = device.createComputePipeline({
         layout: device.createPipelineLayout({
             bindGroupLayouts: [bindGroupLayout],
         }),
@@ -292,17 +257,6 @@ async function initializeComputePipeline() {
             entryPoint: "kernel",
         }
     });
-
-    const encoder = device.createCommandEncoder({ label: "commandEncoder" });
-    const computePass = encoder.beginComputePass();
-    computePass.setPipeline(pipeline);
-    computePass.setBindGroup(0, bindGroup);
-    computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
-    computePass.end();
-
-    const commandBuffer = encoder.finish();
-
-    device.queue.submit([commandBuffer]);
 }
 
 let canvasObserver: ResizeObserver;
@@ -384,6 +338,61 @@ async function update(_: number) {
 }
 
 async function render(_: number) {
+    if (!canvasElement.value || !context || !device || !pipeline) return;
+
+    const [width, height] = [canvasElement.value.width, canvasElement.value.height];
+
+    const uniformBuffer = device.createBuffer({
+        size: 9 * Float32Array.BYTES_PER_ELEMENT + 2 * Uint32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(uniformBuffer, 0 * Float32Array.BYTES_PER_ELEMENT, new Float32Array([props.realPart, props.imagPart, props.escapeRadius]));
+    device.queue.writeBuffer(uniformBuffer, 3 * Float32Array.BYTES_PER_ELEMENT, new Uint32Array([props.maximumIterations]));
+    device.queue.writeBuffer(
+        uniformBuffer, 
+        3 * Float32Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT, 
+        new Float32Array([props.zoom, props.radians, props.translationX, props.translationY, width, height])
+    );
+    device.queue.writeBuffer(uniformBuffer, 9 * Float32Array.BYTES_PER_ELEMENT + Uint32Array.BYTES_PER_ELEMENT, new Uint32Array([paletteEntries.value.length]));
+
+    const paletteBuffer = device.createBuffer({
+        size: paletteEntries.value.length * 5 * Float32Array.BYTES_PER_ELEMENT,
+        usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
+    });
+    device.queue.writeBuffer(paletteBuffer, 0, new Float32Array(paletteEntries.value.flatMap(entry => [entry.value, ...entry.color])));
+    
+    const texture = context.getCurrentTexture();
+    const bindGroup = device.createBindGroup({
+        label: "bindGroup",
+        layout: bindGroupLayout,
+        entries: [
+            {
+                binding: 0, 
+                resource: { buffer: uniformBuffer },
+            },
+            {
+                binding: 1, 
+                resource: { buffer: paletteBuffer },
+            },
+            {
+                binding: 2,
+                resource: texture.createView({
+                    dimension: "2d",
+                }),
+            },
+        ],
+    });
+    
+    const encoder = device.createCommandEncoder({ label: "commandEncoder" });
+    const computePass = encoder.beginComputePass();
+    computePass.setPipeline(pipeline);
+    computePass.setBindGroup(0, bindGroup);
+    computePass.dispatchWorkgroups(Math.ceil(width / 8), Math.ceil(height / 8));
+    computePass.end();
+
+    const commandBuffer = encoder.finish();
+
+    device.queue.submit([commandBuffer]);
 }
 
 let previousFpsUpdateTimestamp = 0;
