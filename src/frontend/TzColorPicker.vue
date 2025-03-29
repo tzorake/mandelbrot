@@ -2,21 +2,13 @@
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
 import TzPopup from './TzPopup.vue';
 import useClickOutside from './useClickOutside';
+import { tz } from '../backend/color';
 
-function rgb(color: string) {
-    if (color.startsWith('#')) {
-        const hex = color.slice(1);
-        const r = parseInt(hex.length === 3 ? hex[0] + hex[0] : hex.slice(0, 2), 16);
-        const g = parseInt(hex.length === 3 ? hex[1] + hex[1] : hex.slice(2, 4), 16);
-        const b = parseInt(hex.length === 3 ? hex[2] + hex[2] : hex.slice(4, 6), 16);
-        return [r, g, b];
-    }
+function hsv(c: tz.Color) {
+	let r = tz.red(c);
+	let g = tz.green(c);
+	let b = tz.blue(c);
 
-    return [0, 0, 0]
-}
-
-function hsv(color: string) {
-    let [r, g, b] = rgb(color);
     r /= 255, g /= 255, b /= 255;
 
     const max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -35,9 +27,13 @@ function hsv(color: string) {
     return [h, s, v];
 }
 
-const props = defineProps<{ color: string, wheelRadius: number, pointerSize: number }>();
+function hex(c: tz.Color) {
+    return `#${(c >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+const props = defineProps<{ color: tz.Color, wheelRadius: number, pointerSize: number }>();
 const emit = defineEmits<{
-    (e: "control:color", color: string): void,
+    (e: "control:color", color: tz.Color): void,
 }>();
 
 const popupElement = useTemplateRef("popupElement");
@@ -45,12 +41,18 @@ const colorPickerElement = useTemplateRef("colorPickerElement");
 
 const layoutPaddiing = 10; 
 const isMouseDown = ref(false);
+
+const value = computed(() => 0.0);
+
+const c = computed(() => props.color);
+const rgba = computed(() => hex(c.value));
+
 const position = computed(() => {
     if (colorPickerElement.value === null) {
         return { x: props.wheelRadius, y: props.wheelRadius };
     }
 
-    let [hue, sat, val] = hsv(props.color);
+    let [hue, sat, val] = hsv(c.value);
 
     const theta = ((hue / 180) * Math.PI + Math.PI / 2) % (2 * Math.PI);
     const dist = sat * props.wheelRadius;
@@ -58,15 +60,10 @@ const position = computed(() => {
     const dx = dist * Math.cos(theta);
     const dy = -dist * Math.sin(theta);
 
-    // const r = Math.max(0, Math.min(props.wheelRadius, Math.sqrt(dx * dx + dy * dy)));
-    // const phi = Math.atan2(dy, dx) - Math.PI / 2;
-
-    // return { x: props.wheelRadius + r * Math.cos(phi), y: props.wheelRadius + r * Math.sin(-phi) }
     return { x: props.wheelRadius + dx, y: props.wheelRadius + dy };
 });
 const x = computed(() => position.value.x);
 const y = computed(() => position.value.y);
-const value = computed(() => 0.0);
 
 const { state: visible } = useClickOutside(colorPickerElement);
 
@@ -89,9 +86,6 @@ function onWheelClicked(e: MouseEvent) {
     const dx = e.clientX - rect.left - 10 - props.wheelRadius;
     const dy = e.clientY - rect.top - 10 - props.wheelRadius;
 
-    // const dx = x.value - props.wheelRadius;
-    // const dy = y.value - props.wheelRadius;
-
     const dist = Math.sqrt(dx * dx + dy * dy);
     
     const hue = ((Math.atan2(dy, dx) - Math.PI) * 180 / Math.PI + 360) % 360;
@@ -105,10 +99,7 @@ function onWheelClicked(e: MouseEvent) {
     const k1 = (1 + hue / 60) % 6;
     const b = Math.trunc((val - val * sat * Math.max(0, Math.min(k1, 4 - k1, 1))) * 255);
 
-    const color =`#${[r, g, b].map(x => {
-        const hex = Math.max(0, Math.min(255, x)).toString(16);
-        return hex.length === 1 ? '0' + hex : hex;
-    }).join('')}`;
+    const color = tz.color(r, g, b);
 
     emit("control:color", color);
 }
@@ -120,11 +111,10 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener("mousemove", () => {});
 });
-
 </script>
 
 <template>
-<div class="color-picker" ref="colorPickerElement" :style="{ 'background': `${props.color}` }" @click="onClick"></div>
+<div class="color-picker" ref="colorPickerElement" :style="{ 'background': `${rgba}` }" @click="onClick"></div>
 <TzPopup ref="popupElement" :anchorElement="colorPickerElement" :visible="visible" @popup:visible="onVisibleChanged">
     <div class="popup__layout" :style="{ padding: `${layoutPaddiing}px` }">
         <div class="color-picker__wheel" :style="{ 'width': `${2*props.wheelRadius}px`, 'height': `${2*props.wheelRadius}px` }" @click="onWheelClicked">
@@ -136,7 +126,7 @@ onUnmounted(() => {
                     'left': `${y}px`, 
                     'width': `${props.pointerSize}px`, 
                     'height': `${props.pointerSize}px`, 
-                    'background': props.color 
+                    'background': `${rgba}`
                 }"
             ></div>
             <div class="color-picker__layer-1"></div>

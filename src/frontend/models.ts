@@ -1,15 +1,15 @@
-import type { ButtonControl, CanvasViewProps, ComboBoxControl, NumberFieldControl, SideBar } from "./types.ts";
-import { angleDownIcon, angleUpIcon, badgeIcon, cogTransferIcon, plusIcon } from "./icons.ts";
+import type { ButtonControl, ComboBoxControl, NumberFieldControl, SideBar } from "./types.ts";
+import { angleDownIcon, angleUpIcon, arrowsOutputIcon, badgeIcon, cogTransferIcon, constructionIcon, plusIcon } from "./icons.ts";
 
-const palette = [
-    { id: 0, value: 0.00, color: "#191817ff" },
-    { id: 1, value: 0.03, color: "#785a46ff" },
-    { id: 2, value: 0.05, color: "#821817ff" },
-    { id: 3, value: 0.25, color: "#fab364ff" },
-    { id: 4, value: 0.50, color: "#2b4162ff" },
-    { id: 5, value: 0.85, color: "#0b6e4fff" },
-    { id: 6, value: 0.95, color: "#966e4fff" },
-    { id: 7, value: 1.00, color: "#ffffffff" },
+const DEFAULT_PALETTE = [
+    { id: 0, value: 0.00, color: 0x191817ff },
+    { id: 1, value: 0.03, color: 0x785a46ff },
+    { id: 2, value: 0.05, color: 0x821817ff },
+    { id: 3, value: 0.25, color: 0xfab364ff },
+    { id: 4, value: 0.50, color: 0x2b4162ff },
+    { id: 5, value: 0.85, color: 0x0b6e4fff },
+    { id: 6, value: 0.95, color: 0x966e4fff },
+    { id: 7, value: 1.00, color: 0xffffffff },
 ];
 
 export const sideBar: SideBar = {
@@ -19,12 +19,12 @@ export const sideBar: SideBar = {
     tabs: [
         {
             id: 0,
-            icon: cogTransferIcon,
-            text: "",
+            icon: constructionIcon,
+            text: "Parameters",
             segments: [
                 {
                     id: 0,
-                    text: "Parameters",
+                    text: "",
                     groups: [
                         {
                             id: 0,
@@ -158,8 +158,8 @@ export const sideBar: SideBar = {
                                             type: "ComboBox",
                                             value: 0,
                                             options: [
-                                                { first: 0, second: "c" },
-                                                { first: 1, second: "z0" },
+                                                { first: 0, second: "Parameter Space (c-plane)" },
+                                                { first: 1, second: "Julia Space (z-plane)" },
                                             ],
                                         } as ComboBoxControl,
                                     ],
@@ -171,7 +171,7 @@ export const sideBar: SideBar = {
                             type: "ColorPalette",
                             text: "Colors",
                             expanded: true,
-                            elements: palette.map(entry => ({  // palette
+                            elements: DEFAULT_PALETTE.map(entry => ({
                                 id: entry.id,
                                 color: entry.color,
                                 controls: [
@@ -206,6 +206,64 @@ export const sideBar: SideBar = {
         },
         {
             id: 1,
+            icon: arrowsOutputIcon,
+            text: "",
+            segments: [
+                {
+                    id: 0,
+                    text: "",
+                    groups: [
+                        {
+                            id: 0,
+                            text: "Trasform",
+                            expanded: true,
+                            elements: [
+                                {
+                                    id: 0,
+                                    text: "Traslation",
+                                    controls: [
+                                        {
+                                            id: 0,
+                                            type: "NumberField",
+                                            value: 0.0,
+                                        } as NumberFieldControl,
+                                        {
+                                            id: 1,
+                                            type: "NumberField",
+                                            value: 0.0,
+                                        } as NumberFieldControl,
+                                    ],
+                                },
+                                {
+                                    id: 1,
+                                    text: "Zoom",
+                                    controls: [
+                                        {
+                                            id: 0,
+                                            type: "NumberField",
+                                            value: 0.005,
+                                        } as NumberFieldControl,
+                                    ],
+                                },
+                                {
+                                    id: 2,
+                                    text: "Rotation",
+                                    controls: [
+                                        {
+                                            id: 0,
+                                            type: "NumberField",
+                                            value: -Math.PI,
+                                        } as NumberFieldControl,
+                                    ],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            id: 2,
             icon: badgeIcon,
             text: "",
             segments: [
@@ -220,7 +278,7 @@ export const sideBar: SideBar = {
                             expanded: true,
                             elements: Array.from({ length: 3 }).map((_, index) => ({
                                 id: index,
-                                color: "#ff0000",
+                                color: 0xff0000ff,
                                 controls: [
                                     {
                                         id: 0,
@@ -245,11 +303,4 @@ export const sideBar: SideBar = {
             ],
         },
     ],
-};
-
-export const canvasView: CanvasViewProps = {
-    translationX: 0,
-    translationY: 0,
-    zoom: 0.005,
-    radians: -Math.PI,
 };

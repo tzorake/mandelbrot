@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { tz } from '../backend/color.ts';
 import type { Segment } from './types';
 import TzGroup from './TzGroup.vue';
 
@@ -8,7 +9,7 @@ const emit = defineEmits<{
     (e: "control:number", segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
     (e: "control:boolean", segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
     (e: "control:string", segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
-    (e: "control:color", segmentId: number, groupId: number, elementId: number, value: string): void,
+    (e: "control:color", segmentId: number, groupId: number, elementId: number, value: tz.Color): void,
 }>();
 
 function onExpanded(segmentId: number, value: boolean) {
@@ -27,14 +28,14 @@ function onStringInput(groupId: number, elementId: number, controlId: number, va
     emit("control:string", props.id, groupId, elementId, controlId, value);
 }
 
-function onColorChanged(groupId: number, elementId: number, value: string) {
+function onColorChanged(groupId: number, elementId: number, value: tz.Color) {
     emit("control:color", props.id, groupId, elementId, value);
 }
 </script>
 
 <template>
 <div class="segment">
-    <div class="segment__header">
+    <div class="segment__header" v-if="props.text != ''">
         <div class="segment__icon">{{ props.icon }}</div>
         <div class="segment__text">{{ props.text }}</div>
     </div>

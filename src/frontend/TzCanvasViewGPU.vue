@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import Vector2, { cmult, csum, vec } from '../backend/vector2.ts';
-import { mlmult, mmultv } from '../backend/matrix3.ts';
-import { scale as S, rotate as R, translate as T } from '../backend/transform2.ts';
 import Color from '../backend/color.ts';
 import { Arenas } from '../backend/arenas.ts';
 import { Space, type CanvasView, type PaletteEntry } from './types.ts';

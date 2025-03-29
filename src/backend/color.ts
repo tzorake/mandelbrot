@@ -1,79 +1,43 @@
-import type Arena from "./arena.ts";
-import { clamp } from "./math.ts";
 
-export default class Color {
-	private r: number; 
-	private g: number; 
-	private b: number; 
-	private a: number;
+export namespace tz {
 
-	static arena: Arena<Color> | null = null;
+export type Color = number;
 
-	constructor(r: number = 0, g: number = 0, b: number = 0, a: number = 255) {
-		this.r = clamp(Math.trunc(r), 0, 255);
-		this.g = clamp(Math.trunc(g), 0, 255);
-		this.b = clamp(Math.trunc(b), 0, 255);
-		this.a = clamp(Math.trunc(a), 0, 255);
-	}
+export function mix(c1: Color, c2: Color, factor: number): Color {
+	const r1 = (c1 >> 24) & 0xFF;
+	const g1 = (c1 >> 16) & 0xFF;
+	const b1 = (c1 >> 8) & 0xFF;
 
-	static acquire(r: number = 0, g: number = 0, b: number = 0, a: number = 255): Color {
-        if (Color.arena) {
-			const instance = Color.arena.acquire(); 
-			instance.r = r;
-			instance.g = g;
-			instance.b = b;
-			instance.a = a;
+	const r2 = (c2 >> 24) & 0xFF;
+	const g2 = (c2 >> 16) & 0xFF;
+	const b2 = (c2 >> 8) & 0xFF;
 
-			return instance;
-		} else {
-			return new Color(r, g, b, a);
-		}
-    }
-
-	get red() {
-		return this.r;
-	}
-
-	get green() {
-		return this.g;
-	}
-
-	get blue() {
-		return this.b;
-	}
-
-	get alpha() {
-		return this.a;
-	}
-
-	mix(other: Color, factor: number): Color {
-        return Color.acquire(
-			this.r + (other.r - this.r) * factor,
-			this.g + (other.g - this.g) * factor,
-			this.b + (other.b - this.b) * factor,
-			255
-		);
-    }
-
-	static fromString(c: string): Color {
-        let cleanedHex = c;
-        if (cleanedHex.startsWith("#"))
-            cleanedHex = cleanedHex.substring(1);
-
-        if (cleanedHex.length === 3 || cleanedHex.length === 4) {
-            let expanded = "";
-            for (const char of cleanedHex)
-                expanded += char + char;
-            cleanedHex = expanded;
-        }
-
-        return Color.acquire(
-			parseInt(cleanedHex.substring(0, 2), 16),
-			parseInt(cleanedHex.substring(2, 4), 16),
-			parseInt(cleanedHex.substring(4, 6), 16),
-			cleanedHex.length === 8 
-				? parseInt(cleanedHex.substring(6, 8), 16) 
-				: 255
-		);
-    }
+	return (Math.trunc(r1 + (r2 - r1) * factor) << 24) | (Math.trunc(g1 + (g2 - g1) * factor) << 16) | (Math.trunc(b1 + (b2 - b1) * factor) << 8) | 0xff;
 }
+
+export function color(red: number, green: number, blue: number, alpha?: number): Color
+{
+	return ((red & 0xFF) << 24) | ((green & 0xFF) << 16) | ((blue & 0xFF) << 8) | (alpha !== undefined ? (alpha & 0xFF) : 0xFF)
+}
+
+export function red(color: Color)
+{
+    return (color >> 24) & 0xFF;
+}
+
+export function green(color: Color)
+{
+    return (color >> 16) & 0xFF;
+}
+
+export function blue(color: Color)
+{
+    return (color >> 8) & 0xFF;
+}
+
+export function alpha(color: Color)
+{
+    return (color >> 0) & 0xFF;
+}
+
+} // namespace tz

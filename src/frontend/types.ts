@@ -1,3 +1,5 @@
+import type { tz } from "../backend/color.ts";
+
 export type NumberFieldControl = {
     id: number,
     type: "NumberField",
@@ -38,7 +40,7 @@ export type Element = {
 
 export type ColorPaletteElement = { 
     id: number,
-    color: string,
+    color: tz.Color,
     controls: Array<Control>,
 };
 
@@ -82,15 +84,7 @@ export type SideBar = {
     tabs: Array<Tab>,
 };
 
-export type PaletteColor = string;
-export type PaletteEntry = { id: number, value: number, color: string };
-
-export type CanvasViewProps = {
-    translationX: number,
-    translationY: number,
-    zoom: number,
-    radians: number,
-}
+export type PaletteEntry = { id: number, value: number, color: tz.Color };
 
 let iota = 0;
 
@@ -101,7 +95,7 @@ export const Space = {
 
 export type Space = typeof Space[keyof typeof Space];
 
-export type CanvasView = CanvasViewProps & {
+export type CanvasView = {
     realPart: number,
     imagPart: number,
     escapeRadius: number,
@@ -111,4 +105,8 @@ export type CanvasView = CanvasViewProps & {
     maximumDetailLevel: number,
     palette: Array<PaletteEntry>,
     space: Space,
+    translationX: number,
+    translationY: number,
+    zoom: number,
+    radians: number,
 };

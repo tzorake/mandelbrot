@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { badgeIcon } from './icons';
-import type { Group, ColorPaletteGroup } from './types';
+import type { Color } from '../backend/color.ts';
+import { badgeIcon } from './icons.ts';
+import type { Group, ColorPaletteGroup } from './types.ts';
 import TzColorPaletteElement from './TzColorPaletteElement.vue';
 import TzElement from './TzElement.vue';
 import TzIconLoader from './TzIconLoader.vue';
@@ -11,7 +12,7 @@ const emit = defineEmits<{
     (e: "control:number", groupItemId: number, elementId: number, controlId: number, value: number): void,
     (e: "control:boolean", groupItemId: number, elementId: number, controlId: number, value: boolean): void,
     (e: "control:string", groupItemId: number, elementId: number, controlId: number, value: string): void,
-    (e: "control:color", groupItemId: number, elementId: number, value: string): void,
+    (e: "control:color", groupItemId: number, elementId: number, value: Color): void,
 }>();
 
 function onExpanded() {
@@ -30,7 +31,7 @@ function onStringInput(elementId: number, controlId: number, value: string) {
     emit("control:string", props.id, elementId, controlId, value);
 }
 
-function onColorInput(elementId: number, value: string) {
+function onColorInput(elementId: number, value: Color) {
     emit("control:color", props.id, elementId, value);
 }
 </script>

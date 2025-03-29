@@ -49,6 +49,7 @@ function onStringInput(controlId: number, value: string) {
 
 .element__label {
     width: 40%;
+    height: 18px;
 
     display: flex;
 }

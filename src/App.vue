@@ -2,19 +2,16 @@
 import { computed } from 'vue';
 import TzCanvasView from './frontend/TzCanvasView.vue';
 import TzSideBar from './frontend/TzSideBar.vue';
-import { canvasView as canvasViewInitialState, sideBar as sideBarInitialState } from './frontend/models.ts';
-import { Space, type ButtonControl, type CanvasViewProps, type ColorPaletteElement, type ColorPaletteGroup, type ComboBoxControl, type Control, type Element, type Group, type NumberFieldControl, type SideBar } from './frontend/types.ts';
+import { sideBar as sideBarInitialState } from './frontend/models.ts';
+import { Space, type ButtonControl, type ColorPaletteElement, type ColorPaletteGroup, type ComboBoxControl, type Control, type Element, type Group, type NumberFieldControl, type SideBar } from './frontend/types.ts';
 import { usePersistState } from './frontend/usePersistState.ts';
 import { angleDownIcon, angleUpIcon, plusIcon } from './frontend/icons.ts';
-import TzCanvasViewGPU from './frontend/TzCanvasViewGPU.vue';
+import { tz } from './backend/color.ts';
 
 const ENABLE_LOCAL_STORAGE = false;
+const SIDE_BAR_KEY = "SideBar";
 
-const sideBarKey = "SideBar";
-const { state: sideBar } = usePersistState<SideBar>(sideBarKey, sideBarInitialState, ENABLE_LOCAL_STORAGE);
-
-const canvasViewKey = "CanvasView";
-const { state: canvasView} = usePersistState<CanvasViewProps>(canvasViewKey, canvasViewInitialState, ENABLE_LOCAL_STORAGE);
+const { state: sideBar } = usePersistState<SideBar>(SIDE_BAR_KEY, sideBarInitialState, ENABLE_LOCAL_STORAGE);
 
 function group<T>(tabId: number, segmentId: number, groupId: number): T | null {
     const tab = sideBar.value.tabs.find(item => item.id === tabId);
@@ -62,13 +59,12 @@ function pseudoRandom(seed: number) {
   return (a * seed + c) % m;
 }
 
-function randomColorFromId(id: number): string {
-    const r = ((pseudoRandom(id + 0)) >> 16) & 0xff;
-    const g = ((pseudoRandom(id + 1)) >> 8 ) & 0xff;
-    const b = ((pseudoRandom(id + 2)) >> 0 ) & 0xff;
-    const a = ((pseudoRandom(id + 3)) >> 0 ) & 0xff;
+function randomColorFromId(id: number): tz.Color {
+    const r = ((pseudoRandom(id + 0)) >> 24) & 0xff;
+    const g = ((pseudoRandom(id + 1)) >> 16) & 0xff;
+    const b = ((pseudoRandom(id + 2)) >> 8 ) & 0xff;
 
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}${a.toString(16).padStart(2, '0')}`;
+    return tz.color(r, g, b)
 }
 
 const realPart = computed(() => {
@@ -163,6 +159,86 @@ const palette = computed(() => {
     }
 
     return gr.elements.map(item => ({ id: item.id, color: item.color, value: (item.controls[0] as NumberFieldControl).value }));
+});
+const translationX = computed({
+    get() {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return 1;
+        }
+
+        return ctl.value;
+    },
+    set(value: number) {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return;
+        }
+
+        ctl.value = value;
+    }
+});
+const translationY = computed({
+    get() {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 1);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return 1;
+        }
+
+        return ctl.value;
+    },
+    set(value: number) {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 1);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return;
+        }
+
+        ctl.value = value;
+    }
+});
+const zoom = computed({
+    get() {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 1, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return 1;
+        }
+
+        return ctl.value;
+    },
+    set(value: number) {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 1, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return;
+        }
+
+        ctl.value = value;
+    }
+});
+const radians = computed({
+    get() {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 2, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return 1;
+        }
+
+        return ctl.value;
+    },
+    set(value: number) {
+        const ctl = control<NumberFieldControl>(1, 0, 0, 2, 0);
+        if (ctl == null) {
+            console.error("control should return a valid object");
+            return;
+        }
+
+        ctl.value = value;
+    }
 });
 
 function onCurrentTabChanged(value: number) {
@@ -340,7 +416,7 @@ function onStringInput(tabId: number, segmentId: number, groupId: number, elemen
     }
 }
 
-function onColorChanged(tabId: number, segmentId: number, groupId: number, elementId: number, value: string) {
+function onColorChanged(tabId: number, segmentId: number, groupId: number, elementId: number, value: tz.Color) {
     const tab = sideBar.value.tabs.find(item => item.id === tabId);
     if (!tab) 
         return;
@@ -368,19 +444,19 @@ function onStepChanged(value: number) {
 }
 
 function onTranslationXChanged(value: number) {
-	canvasView.value.translationX = value;
+	translationX.value = value;
 }
 
 function onTranslationYChanged(value: number) {
-	canvasView.value.translationY = value;
+	translationY.value = value;
 }
 
 function onZoomChanged(value: number) {
-	canvasView.value.zoom = value;
+	zoom.value = value;
 }
 
 function onRadiansChanged(value: number) {
-	canvasView.value.radians = value;
+	radians.value = value;
 }
 </script>
 
@@ -396,9 +472,7 @@ function onRadiansChanged(value: number) {
 	@control:string="onStringInput"
 	@control:color="onColorChanged"
 />
-<TzCanvasViewGPU
-    v-bind="canvasView"
-
+<TzCanvasView
     :realPart="realPart"
     :imagPart="imagPart"
     :escapeRadius="escapeRadius"
@@ -406,9 +480,13 @@ function onRadiansChanged(value: number) {
     :step="step"
     :detailLevel="detailLevel"
     :maximumDetailLevel="maximumDetailLevel"
-    :palette="palette"
     :space="space"
-
+    :palette="palette"
+    :translationX="translationX"
+    :translationY="translationY"
+    :zoom="zoom"
+    :radians="radians"
+    
 	@step="onStepChanged"
 	@translation:x="onTranslationXChanged"
 	@translation:y="onTranslationYChanged"

@@ -4,6 +4,7 @@ import type { SideBar, Tab } from "./types.ts";
 import TzIconLoader from './TzIconLoader.vue';
 import TzSegment from './TzSegment.vue';
 import { menuIcon } from './icons.ts';
+import type { tz } from '../backend/color.ts';
 
 const props = defineProps<SideBar>();
 const emit = defineEmits<{
@@ -13,7 +14,7 @@ const emit = defineEmits<{
     (e: "control:number", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: number): void,
     (e: "control:boolean", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean): void,
     (e: "control:string", tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: string): void,
-    (e: "control:color", tabId: number, segmentId: number, groupId: number, elementId: number, value: string): void,
+    (e: "control:color", tabId: number, segmentId: number, groupId: number, elementId: number, value: tz.Color): void,
 }>();
 
 function onClick(_: Event) {
@@ -47,7 +48,7 @@ function onStringInput(segmentId: number, groupId: number, elementId: number, co
     emit("control:string", props.currentTab, segmentId, groupId, elementId, controlId, value);
 }
 
-function onColorChanged(segmentId: number, groupId: number, elementId: number, value: string) {
+function onColorChanged(segmentId: number, groupId: number, elementId: number, value: tz.Color) {
     emit("control:color", props.currentTab, segmentId, groupId, elementId, value);
 }
 
