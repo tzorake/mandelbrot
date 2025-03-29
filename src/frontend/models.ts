@@ -1,5 +1,5 @@
 import type { ButtonControl, ComboBoxControl, NumberFieldControl, SideBar } from "./types.ts";
-import { angleDownIcon, angleUpIcon, arrowsOutputIcon, badgeIcon, cogTransferIcon, constructionIcon, plusIcon } from "./icons.ts";
+import { angleDownIcon, angleUpIcon, arrowsOutputIcon, constructionIcon, paletteIcon, plusIcon } from "./icons.ts";
 
 const DEFAULT_PALETTE = [
     { id: 0, value: 0.00, color: 0x191817ff },
@@ -166,40 +166,6 @@ export const sideBar: SideBar = {
                                 },
                             ],
                         },
-                        {
-                            id: 5,
-                            type: "ColorPalette",
-                            text: "Colors",
-                            expanded: true,
-                            elements: DEFAULT_PALETTE.map(entry => ({
-                                id: entry.id,
-                                color: entry.color,
-                                controls: [
-                                    {
-                                        id: 0,
-                                        type: "NumberField",
-                                        value: entry.value,
-                                        min: 0.0,
-                                        max: 1.0,
-                                    } as NumberFieldControl,
-                                    {
-                                        id: 1,
-                                        type: "Button",
-                                        icon: angleUpIcon
-                                    } as ButtonControl,
-                                    {
-                                        id: 2,
-                                        type: "Button",
-                                        icon: angleDownIcon
-                                    } as ButtonControl,
-                                    {
-                                        id: 3,
-                                        type: "Button",
-                                        icon: plusIcon
-                                    } as ButtonControl,
-                                ],
-                            }))
-                        },
                     ],
                 },
             ],
@@ -252,7 +218,9 @@ export const sideBar: SideBar = {
                                         {
                                             id: 0,
                                             type: "NumberField",
-                                            value: -Math.PI,
+                                            value: 0,
+                                            min: 0,
+                                            max: 2 * Math.PI,
                                         } as NumberFieldControl,
                                     ],
                                 },
@@ -264,36 +232,43 @@ export const sideBar: SideBar = {
         },
         {
             id: 2,
-            icon: badgeIcon,
-            text: "",
+            icon: paletteIcon,
+            text: "Color Theme",
             segments: [
                 {
                     id: 0,
-                    text: "Color theme",
+                    text: "",
                     groups: [
                         {
                             id: 0,
                             type: "ColorPalette",
-                            text: "Colors",
+                            text: "Color Theme",
                             expanded: true,
-                            elements: Array.from({ length: 3 }).map((_, index) => ({
-                                id: index,
-                                color: 0xff0000ff,
+                            elements: DEFAULT_PALETTE.map(entry => ({
+                                id: entry.id,
+                                color: entry.color,
                                 controls: [
                                     {
                                         id: 0,
                                         type: "NumberField",
-                                        value: Math.trunc(1.0 / 6 * (index + 1) * 15) / 10,
+                                        value: entry.value,
                                         min: 0.0,
                                         max: 1.0,
                                     } as NumberFieldControl,
                                     {
                                         id: 1,
                                         type: "Button",
+                                        icon: angleUpIcon
                                     } as ButtonControl,
                                     {
                                         id: 2,
                                         type: "Button",
+                                        icon: angleDownIcon
+                                    } as ButtonControl,
+                                    {
+                                        id: 3,
+                                        type: "Button",
+                                        icon: plusIcon
                                     } as ButtonControl,
                                 ],
                             }))

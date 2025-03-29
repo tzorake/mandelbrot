@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
 import TzButtonControl from './TzButtonControl.vue';
 import TzCheckBoxControl from './TzCheckBoxControl.vue';
 import TzComboBoxControl from './TzComboBoxControl.vue';
@@ -21,9 +20,9 @@ function onBooleanInput(controlId: number, value: boolean) {
     emit("control:boolean", controlId, value);
 }
 
-function onStringInput(controlId: number, value: string) {
-    emit("control:string", controlId, value);
-}
+// function onStringInput(controlId: number, value: string) {
+//     emit("control:string", controlId, value);
+// }
 
 </script>
 

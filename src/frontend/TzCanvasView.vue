@@ -28,6 +28,7 @@ let translationX = computed(() => props.translationX);
 let translationY = computed(() => props.translationY);
 let previousTranslationX = 0;
 let previousTranslationY = 0;
+let previousRadians = 0;
 let zoom = computed(() => props.zoom);
 let radians = computed(() => props.radians);
 let step = computed(() => props.step);
@@ -42,6 +43,7 @@ let pixels: Uint8ClampedArray;
 let imageData: ImageData;
 
 let isLeftButtonPressed = false;
+let isAltKeyPressed = false;
 let startX: number | null = null;
 let startY: number | null = null;
 
@@ -141,26 +143,44 @@ function onWheel(event: WheelEvent): void {
 function onMouseDown(event: MouseEvent): void {
     if (event.button === 0) {
         isLeftButtonPressed = true;
+		isAltKeyPressed = event.altKey;
 		startX = event.clientX;
         startY = event.clientY;
 		previousTranslationX = translationX.value;
 		previousTranslationY = translationY.value;
+		previousRadians = radians.value;
 	}
 }
 
 function onMouseUp(event: MouseEvent): void {
     if (event.button === 0) {
         isLeftButtonPressed = false;
+		isAltKeyPressed = false;
 		startX = null;
         startY = null;
 	}
 }
 
+const TWO_PI = 2 * Math.PI;
+
 function onMouseMove(event: MouseEvent): void {
+	if (!canvasElement.value)
+		return;
+
 	if (isLeftButtonPressed && startX !== null && startY !== null) {
-		emit("step", detailLevel.value);
-		emit("translation:x", previousTranslationX - (event.clientX - startX) * zoom.value);
-		emit("translation:y", previousTranslationY - (event.clientY - startY) * zoom.value);
+		if (isAltKeyPressed) {
+			const value = (previousRadians + (event.clientX - startX) / canvasElement.value.width * 2);
+
+			emit("step", detailLevel.value);
+			emit("radians", ((value % TWO_PI) + TWO_PI) % TWO_PI);
+		} else {
+			const deltaX = event.clientX - startX;
+			const deltaY = event.clientY - startY;
+			
+			emit("step", detailLevel.value);
+			emit("translation:x", previousTranslationX - (Math.cos(-radians.value) * deltaX + Math.sin(-radians.value) * deltaY) * zoom.value);
+			emit("translation:y", previousTranslationY - (-Math.sin(-radians.value) * deltaX + Math.cos(-radians.value) * deltaY) * zoom.value);
+		}
 	}
 }
 
@@ -191,8 +211,7 @@ function mandelbrotImpl(z_x: number, z_y: number, c_x: number, c_y: number): { i
     return { iter, l };
 }
 
-function mandelbrot(z_x: number, z_y: number, c_x: number, c_y: number): { iter: number, l: number }
-{
+function mandelbrot(z_x: number, z_y: number, c_x: number, c_y: number): { iter: number, l: number } {
 	return space.value === Space.PARAMETER_SPACE ? mandelbrotImpl(z_x, z_y, c_x, c_y) : mandelbrotImpl(c_x, c_y, z_x, z_y);
 }
 
@@ -218,11 +237,11 @@ function smooth(iter: number, l: number): number {
 // let x2 = -Math.trunc(canvasWidth / 2);
 // let y2 = -Math.trunc(canvasHeight / 2);
 // 
-// ( [c, -s, 0]   [1, 0, x]   [v, 0, 0]   (      [1, 0, x2] ) )   [x]   [-(c * v * x) - c * x1 - c * v * x2 + s * v * y + s * y1 + s * v * y2]
-// ( [s,  c, 0] * [0, 1, y] * [0, v, 0] * ( -1 * [0, 1, y2] ) ) * [y] = [-(s * v * y) - s * x1 - s * v * x2 - c * v * y - c * y1 - c * v * y2]
-// ( [0,  0, 1]   [0, 0, 1]   [0, 0, 1]   (      [0, 0,  1] ) )   [1]   [-1]
+// ( [1, 0, x1]   [c, -s, 0]   [v, 0, 0]   [1, 0, x2] )   [x]   [c * v * x - v * s * y + c * v * x2 - v * s * y2 + x1]
+// ( [0, 1, y1] * [s,  c, 0] * [0, v, 0] * [0, 1, y2] ) * [y] = [v * s * x + c * v * y + v * s * x2 + c * v * y2 + y1]
+// ( [0, 0,  1]   [0,  0, 1]   [0, 0, 1]   [0, 0,  1] )   [1]   [1]
 // ```
-function computeJulia() {
+function compute() {
 	if (canvasElement.value === null) {
 		console.error("canvasElement.value should not be null");
 		return false;
@@ -243,8 +262,8 @@ function computeJulia() {
 		for (let x = 0; x < canvasWidth; x += step.value) {
 			const { iter, l } = mandelbrot(
 				realPart.value, imagPart.value, 
-				-(C * V * x) - C * X1 - C * V * X2 + S * V * y + S * Y1 + S * V * Y2, 
-				-(S * V * y) - S * X1 - S * V * X2 - C * V * y - C * Y1 - C * V * Y2
+				C * V * x - V * S * y + C * V * X2 - V * S * Y2 + X1,
+				V * S * x + C * V * y + V * S * X2 + C * V * Y2 + Y1,
 			);
 			const color = interpolate(palette.value, smooth(iter, l));
 			for (let dy = 0; dy < step.value && y + dy < canvasHeight; ++dy) {
@@ -262,22 +281,8 @@ function computeJulia() {
     return true;
 }
 
-let prevoiusTimestamp = 0;
-
-function renderLoop(timestamp: number) {
-    const deltaTime = timestamp - prevoiusTimestamp;
-    prevoiusTimestamp = timestamp;
-
-    update(deltaTime);
-    render(deltaTime);
-
-    animationFrameHandle = requestAnimationFrame(renderLoop);
-
-	updateFps(timestamp);
-}
-
 function update(_: number) {
-	if (computeJulia()) {
+	if (compute()) {
 		const newStep = Math.max(step.value - 1, maximumDetailLevel.value)
 		if (newStep !== step.value) {
 			emit("step", newStep);
@@ -308,6 +313,20 @@ function updateFps(timestamp: number) {
 		frameCount = 0;
 		prevoiusFpsUpdateTimestamp = timestamp;
 	}
+}
+
+let prevoiusTimestamp = 0;
+
+function renderLoop(timestamp: number) {
+    const deltaTime = timestamp - prevoiusTimestamp;
+    prevoiusTimestamp = timestamp;
+
+    update(deltaTime);
+    render(deltaTime);
+
+    animationFrameHandle = requestAnimationFrame(renderLoop);
+
+	updateFps(timestamp);
 }
 
 </script>

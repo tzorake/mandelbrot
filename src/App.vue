@@ -152,7 +152,7 @@ const space = computed(() => {
     return value !== Space.DYNAMIC_SPACE ? Space.PARAMETER_SPACE : Space.DYNAMIC_SPACE;
 });
 const palette = computed(() => {
-    const gr = group<ColorPaletteGroup>(0, 0, 5);
+    const gr = group<ColorPaletteGroup>(2, 0, 0);
     if (gr == null) {
         console.error("control should return a valid object");
         return [];
@@ -311,8 +311,8 @@ function onBooleanInput(tabId: number, segmentId: number, groupId: number, eleme
     }
 }
 
-function onButtonClicked(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
-    if (segmentId === 0 && groupId === 5) {
+function onButtonClicked(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, _: boolean) {
+    if (tabId === 2 && segmentId === 0 && groupId === 0) {
         if (controlId === 1) {
             const gr = group<ColorPaletteGroup>(tabId, segmentId, groupId);
             if (gr == null)

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, useTemplateRef } from 'vue';
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import TzPopup from './TzPopup.vue';
 import useClickOutside from './useClickOutside';
 import { tz } from '../backend/color';
@@ -40,7 +40,7 @@ const popupElement = useTemplateRef("popupElement");
 const colorPickerElement = useTemplateRef("colorPickerElement");
 
 const layoutPaddiing = 10; 
-const isMouseDown = ref(false);
+// const isMouseDown = ref(false);
 
 const value = computed(() => 0.0);
 
@@ -52,7 +52,7 @@ const position = computed(() => {
         return { x: props.wheelRadius, y: props.wheelRadius };
     }
 
-    let [hue, sat, val] = hsv(c.value);
+    let [hue, sat, _] = hsv(c.value);
 
     const theta = ((hue / 180) * Math.PI + Math.PI / 2) % (2 * Math.PI);
     const dist = sat * props.wheelRadius;

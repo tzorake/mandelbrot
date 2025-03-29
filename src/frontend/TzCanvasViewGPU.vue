@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue';
 import Vector2, { cmult, csum, vec } from '../backend/vector2.ts';
 import Color from '../backend/color.ts';
@@ -142,7 +142,7 @@ const sharder = `
         z: vec2<f32>,
     };
 
-    fn julia(z0: vec2<f32>, c: vec2<f32>) -> JuliaResult {
+    fn mandelbrot(z0: vec2<f32>, c: vec2<f32>) -> JuliaResult {
         var iter: u32 = 0u;
         var z = z0;
 
@@ -183,7 +183,7 @@ const sharder = `
             -(C * V * x) - C * X1 - C * V * X2 + S * V * y + S * Y1 + S * V * Y2,
             -(S * V * x) - S * X1 - S * V * X2 - C * V * y - C * Y1 - C * V * Y2,
         );
-        let result = julia(z0, c);
+        let result = mandelbrot(z0, c);
 
         let iter = result.iter;
         let z = result.z;
@@ -436,4 +436,13 @@ function updateFps(timestamp: number) {
 	opacity: 0.75;
 	white-space: pre-wrap;
 }
+</style> -->
+
+<script setup lang="ts">
+</script>
+
+<template>
+</template>
+
+<style scoped>
 </style>
