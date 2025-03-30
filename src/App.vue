@@ -2,44 +2,17 @@
 import { computed } from 'vue';
 import TzCanvasView from './frontend/TzCanvasView.vue';
 import TzSideBar from './frontend/TzSideBar.vue';
-import { sideBar as sideBarInitialState } from './frontend/models.ts';
-import { Space, type ButtonControl, type ColorPaletteElement, type ColorPaletteGroup, type ComboBoxControl, type Control, type Element, type Group, type NumberFieldControl, type SideBar } from './frontend/types.ts';
+import { Controls, Elements, Groups, Segments, sideBar as sideBarInitialState, Tabs } from './frontend/models.ts';
+import { Space, type ColorPaletteGroup, type ComboBoxControl, type Control, type Group, type NumberFieldControl, type SideBar } from './frontend/types.ts';
 import { usePersistState } from './frontend/usePersistState.ts';
 import { angleDownIcon, angleUpIcon, plusIcon } from './frontend/icons.ts';
 import { tz } from './backend/color.ts';
+import { ColorPaletteElementBuilder, controlById, groupById } from './frontend/builder.ts';
 
 const ENABLE_LOCAL_STORAGE = false;
 const SIDE_BAR_KEY = "SideBar";
 
 const { state: sideBar } = usePersistState<SideBar>(SIDE_BAR_KEY, sideBarInitialState, ENABLE_LOCAL_STORAGE);
-
-function group<T>(tabId: number, segmentId: number, groupId: number): T | null {
-    const tab = sideBar.value.tabs.find(item => item.id === tabId);
-    if (!tab) 
-        return null;
-
-    const segment = tab.segments.find(item => item.id === segmentId);
-    if (!segment) 
-        return null;
-
-    return segment.groups.find(item => item.id === groupId) as T;
-}
-
-function element<T>(tabId: number, segmentId: number, groupId: number, elementId: number): T | null {
-    const gr = group<Group>(tabId, segmentId, groupId);
-    if (!gr) 
-        return null;
-
-    return gr.elements.find(item => item.id === elementId) as T;
-}
-
-function control<T extends Control>(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number): T | null {
-    const elem = element<Element | ColorPaletteElement>(tabId, segmentId, groupId, elementId);
-    if (!elem) 
-        return null;
-
-    return elem.controls.find(item => item.id === controlId) as T;
-}
 
 function firstAvailableId(items: { id: number }[]): number {
     const ids = new Set(items.map((item) => item.id));
@@ -68,7 +41,7 @@ function randomColorFromId(id: number): tz.Color {
 }
 
 const realPart = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 0, 0, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.RealPart, Controls.RealPart);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -77,7 +50,7 @@ const realPart = computed(() => {
     return ctl.value;
 });
 const imagPart = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 0, 1, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.ImaginaryPart, Controls.ImaginaryPart);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -86,7 +59,7 @@ const imagPart = computed(() => {
     return ctl.value;
 });
 const escapeRadius = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 1, 0, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.EscapeRadius, Controls.EscapeRadius);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -95,7 +68,7 @@ const escapeRadius = computed(() => {
     return ctl.value;
 });
 const maximumIterations = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 2, 0, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumIterations, Controls.MaximumIterations);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -105,7 +78,7 @@ const maximumIterations = computed(() => {
 });
 const step = computed({
     get() {
-        const ctl = control<NumberFieldControl>(0, 0, 3, 0, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 0;
@@ -114,7 +87,7 @@ const step = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = control<NumberFieldControl>(0, 0, 3, 0, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -124,7 +97,7 @@ const step = computed({
     }
 });
 const detailLevel = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 3, 1, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.DetailLevel, Controls.DetailLevel);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 1;
@@ -133,7 +106,7 @@ const detailLevel = computed(() => {
     return ctl.value;
 });
 const maximumDetailLevel = computed(() => {
-    const ctl = control<NumberFieldControl>(0, 0, 3, 2, 0);
+    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumDetailLevel, Controls.MaximumDetailLevel);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 1;
@@ -142,27 +115,18 @@ const maximumDetailLevel = computed(() => {
     return ctl.value;
 });
 const space = computed(() => {
-    const gr = group<ColorPaletteGroup>(0, 0, 4);
-    if (gr == null) {
+    const ctl = controlById<ComboBoxControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Space, Controls.Space);
+    if (ctl == null) {
         console.error("control should return a valid object");
         return Space.PARAMETER_SPACE;
     }
 
-    const value = (gr.elements[0].controls[0] as ComboBoxControl).value;
-    return value !== Space.DYNAMIC_SPACE ? Space.PARAMETER_SPACE : Space.DYNAMIC_SPACE;
+    return ctl.value !== Space.DYNAMIC_SPACE ? Space.PARAMETER_SPACE : Space.DYNAMIC_SPACE;
 });
-const palette = computed(() => {
-    const gr = group<ColorPaletteGroup>(2, 0, 0);
-    if (gr == null) {
-        console.error("control should return a valid object");
-        return [];
-    }
 
-    return gr.elements.map(item => ({ id: item.id, color: item.color, value: (item.controls[0] as NumberFieldControl).value }));
-});
 const translationX = computed({
     get() {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -171,7 +135,7 @@ const translationX = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -182,7 +146,7 @@ const translationX = computed({
 });
 const translationY = computed({
     get() {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 1);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -191,7 +155,7 @@ const translationY = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 0, 1);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -202,7 +166,7 @@ const translationY = computed({
 });
 const zoom = computed({
     get() {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 1, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -211,7 +175,7 @@ const zoom = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 1, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -222,7 +186,7 @@ const zoom = computed({
 });
 const radians = computed({
     get() {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 2, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -231,7 +195,7 @@ const radians = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = control<NumberFieldControl>(1, 0, 0, 2, 0);
+        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -239,6 +203,16 @@ const radians = computed({
 
         ctl.value = value;
     }
+});
+
+const palette = computed(() => {
+    const gr = groupById<ColorPaletteGroup>(sideBar.value, Tabs.ColorPalette, Segments.ColorPalette, Groups.ColorTheme)
+    if (gr == null) {
+        console.error("control should return a valid object");
+        return [];
+    }
+
+    return gr.elements.map(item => ({ id: item.id, color: item.color, value: (item.controls[0] as NumberFieldControl).value }));
 });
 
 function onCurrentTabChanged(value: number) {
@@ -250,29 +224,15 @@ function onSideBarExpandedChanged(value: boolean) {
 }
 
 function onGroupExpandedChanged(tabId: number, segmentId: number, groupId: number, value: boolean) {
-    const tab = sideBar.value.tabs.find(item => item.id === tabId);
-    if (tab == undefined) {
-        console.error((`Current tab not found.`));
+    const gr = groupById<Group | ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
+    if (!gr)
         return;
-    }
 
-    const segment = tab!.segments.find(item => item.id === segmentId);
-    if (segment == undefined) {
-        console.error(`Segment with id ${segmentId} not found.`);
-        return;
-    } 
-
-    const group = segment!.groups.find(item => item.id === groupId);
-    if (group == undefined)  {
-        console.error(`Group with id ${groupId} not found.`);
-        return;
-    }
-
-	group!.expanded = value;
+	gr.expanded = value;
 }
 
 function onNumberInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
-    const ctl = control<Control>(tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 
@@ -292,7 +252,7 @@ function onNumberInput(tabId: number, segmentId: number, groupId: number, elemen
 }
 
 function onBooleanInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
-    const ctl = control<Control>(tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById<Control>(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 
@@ -312,9 +272,10 @@ function onBooleanInput(tabId: number, segmentId: number, groupId: number, eleme
 }
 
 function onButtonClicked(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, _: boolean) {
-    if (tabId === 2 && segmentId === 0 && groupId === 0) {
-        if (controlId === 1) {
-            const gr = group<ColorPaletteGroup>(tabId, segmentId, groupId);
+    if (tabId === Tabs.ColorPalette && segmentId === Segments.ColorPalette && groupId === Groups.ColorTheme) {
+        console.info(tabId, segmentId, groupId, elementId, controlId)
+        if (controlId === Controls.SwapAbove) {
+            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -332,8 +293,8 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
             }
         }
 
-        if (controlId === 2) {
-            const gr = group<ColorPaletteGroup>(tabId, segmentId, groupId);
+        if (controlId === Controls.SwapBelow) {
+            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -351,8 +312,8 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
             }
         }
 
-        if (controlId === 3) {
-            const gr = group<ColorPaletteGroup>(tabId, segmentId, groupId);
+        if (controlId === Controls.AddColor) {
+            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -369,34 +330,23 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
             const value = (takeNext ? second + first : first + second) / 2;
 
             const id = firstAvailableId(gr.elements);
-            const elem = {
-                id,
-                color: randomColorFromId(id),
-                controls: [
-                    {
-                        id: 0,
-                        type: "NumberField",
-                        value,
-                        min: 0.0,
-                        max: 1.0,
-                    } as NumberFieldControl,
-                    {
-                        id: 1,
-                        type: "Button",
-                        icon: angleUpIcon
-                    } as ButtonControl,
-                    {
-                        id: 2,
-                        type: "Button",
-                        icon: angleDownIcon
-                    } as ButtonControl,
-                    {
-                        id: 3,
-                        type: "Button",
-                        icon: plusIcon
-                    } as ButtonControl,
-                ],
-            } as ColorPaletteElement;
+            const elem = new ColorPaletteElementBuilder(id)
+                .setColor(randomColorFromId(id))
+                .addNumberField(numberField => numberField
+                    .setMin(0.0)
+                    .setMax(1.0)
+                    .setValue(value)
+                )
+                .addButton(button => button
+                    .setIcon(angleUpIcon)
+                )
+                .addButton(button => button
+                    .setIcon(angleDownIcon)
+                )
+                .addButton(button => button
+                    .setIcon(plusIcon)
+                )
+                .build();
 
             gr.elements.splice(takeNext ? secondIndex : firstIndex, 0, elem);
         }
@@ -404,7 +354,7 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
 }
 
 function onStringInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: string) {
-    const ctl = control<Control>(tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById<Control>(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 

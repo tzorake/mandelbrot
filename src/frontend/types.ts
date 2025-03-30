@@ -3,11 +3,11 @@ import type { tz } from "../backend/color.ts";
 export type NumberFieldControl = {
     id: number,
     type: "NumberField",
+    dataType: "Real" | "Int"
     value: number,
     min?: number,
     max?: number,
     text?: string,
-    dataType?: "Real" | "Int"
 };
 export type ComboBoxControlOption = { first: number, second: string };
 export type ComboBoxControl = {
@@ -46,7 +46,7 @@ export type ColorPaletteElement = {
 
 export type Group = { 
     id: number,
-    type?: "Normal",
+    type: "Normal",
     icon?: string, 
     text: string, 
     expanded: boolean, 

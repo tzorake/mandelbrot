@@ -154,10 +154,10 @@ function onMouseDown(event: MouseEvent): void {
 
 function onMouseUp(event: MouseEvent): void {
     if (event.button === 0) {
-        isLeftButtonPressed = false;
+		isLeftButtonPressed = false;
 		isAltKeyPressed = false;
 		startX = null;
-        startY = null;
+		startY = null;
 	}
 }
 
@@ -318,13 +318,13 @@ function updateFps(timestamp: number) {
 let prevoiusTimestamp = 0;
 
 function renderLoop(timestamp: number) {
-    const deltaTime = timestamp - prevoiusTimestamp;
+    animationFrameHandle = requestAnimationFrame(renderLoop);
+
+	const deltaTime = timestamp - prevoiusTimestamp;
     prevoiusTimestamp = timestamp;
 
     update(deltaTime);
     render(deltaTime);
-
-    animationFrameHandle = requestAnimationFrame(renderLoop);
 
 	updateFps(timestamp);
 }
@@ -333,7 +333,14 @@ function renderLoop(timestamp: number) {
 
 <template>
 <div class="canvas-view">
-    <canvas class="canvas" ref="canvasElement" @mousewheel="onWheel" @mousedown="onMouseDown" @mouseup="onMouseUp" @mousemove="onMouseMove"></canvas>
+    <canvas 
+		class="canvas" 
+		ref="canvasElement" 
+		@mousewheel="onWheel" 
+		@mousedown="onMouseDown" 
+		@mouseup="onMouseUp" 
+		@mousemove="onMouseMove"
+	></canvas>
     <div class="stats">
         <div class="fps" ref="fpsElement"></div>
     </div>
