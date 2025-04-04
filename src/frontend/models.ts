@@ -2,13 +2,13 @@ import { angleDownIcon, angleUpIcon, arrowsOutputIcon, constructionIcon, palette
 import { controlByIndex, elementByIndex, groupByIndex, segmentByIndex, SideBarBuilder, tabByIndex } from "./builder.ts";
 
 const DEFAULT_PALETTE = [
-    { value: 0.00, color: 0x191817ff },
-    { value: 0.03, color: 0x785a46ff },
-    { value: 0.05, color: 0x821817ff },
-    { value: 0.25, color: 0xfab364ff },
-    { value: 0.50, color: 0x2b4162ff },
-    { value: 0.85, color: 0x0b6e4fff },
-    { value: 0.95, color: 0x966e4fff },
+    { value: 0.00, color: 0xff171819 },
+    { value: 0.03, color: 0xff465a78 },
+    { value: 0.05, color: 0xff171882 },
+    { value: 0.25, color: 0xff64b3fa },
+    { value: 0.50, color: 0xff62412b },
+    { value: 0.85, color: 0xff4f6e0b },
+    { value: 0.95, color: 0xff4f6e96 },
     { value: 1.00, color: 0xffffffff },
 ];
 
@@ -54,7 +54,6 @@ export const sideBar = new SideBarBuilder()
                     .addNumberField(numberField => numberField
                         .setDataType("Int")
                         .setMin(0)
-                        .setValue(1)
                         .setValue(4)
                     )
                 )
