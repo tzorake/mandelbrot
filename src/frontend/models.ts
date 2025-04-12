@@ -1,5 +1,7 @@
-import { angleDownIcon, angleUpIcon, arrowsOutputIcon, constructionIcon, paletteIcon, plusIcon } from "./icons.ts";
+import { angleDownIcon, angleUpIcon, arrowsOutputIcon, constructionIcon, paletteIcon, plusIcon, settingsIcon } from "./icons.ts";
 import { controlByIndex, elementByIndex, groupByIndex, segmentByIndex, SideBarBuilder, tabByIndex } from "./builder.ts";
+import { ref, type Ref } from "vue";
+import type { SideBar } from "./types.ts";
 
 const DEFAULT_PALETTE = [
     { value: 0.00, color: 0xff171819 },
@@ -12,136 +14,163 @@ const DEFAULT_PALETTE = [
     { value: 1.00, color: 0xffffffff },
 ];
 
-export const sideBar = new SideBarBuilder()
-    .addTab(tab => tab
-        .setIcon(constructionIcon)
-        .setText("Parameters")
-        .addSegment(segment => segment
-            .addNormalGroup(group => group
-                .setText("Parameters")
-                .addElement(element => element
-                    .setText("Real Part")
-                    .addNumberField(numberField => numberField
-                        .setMin(-2)
-                        .setMax(2)
+function create(): SideBar {
+    return new SideBarBuilder()
+        .addTab(tab => tab
+            .setIcon(constructionIcon)
+            .setText("Parameters")
+            .addSegment(segment => segment
+                .addNormalGroup(group => group
+                    .setText("Parameters")
+                    .addElement(element => element
+                        .setText("Real Part")
+                        .addNumberField(numberField => numberField
+                            .setMin(-2)
+                            .setMax(2)
+                        )
                     )
-                )
-                .addElement(element => element
-                    .setText("Imaginaty Part")
-                    .addNumberField(numberField => numberField
-                        .setMin(-2)
-                        .setMax(2)
+                    .addElement(element => element
+                        .setText("Imaginaty Part")
+                        .addNumberField(numberField => numberField
+                            .setMin(-2)
+                            .setMax(2)
+                        )
                     )
-                )
-                .addElement(element => element
-                    .setText("Escape Radius")
-                    .addNumberField(numberField => numberField
-                        .setMin(0.0)
-                        .setMax(2.0)
-                        .setValue(2.0)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Maximum Iterations")
-                    .addNumberField(numberField => numberField
-                        .setDataType("Int")
-                        .setMin(0)
-                        .setValue(200)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Step")
-                    .addNumberField(numberField => numberField
-                        .setDataType("Int")
-                        .setMin(0)
-                        .setValue(4)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Detail Level")
-                    .addNumberField(numberField => numberField
-                        .setDataType("Int")
-                        .setMin(0)
-                        .setValue(20)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Maximum Detail Level")
-                    .addNumberField(numberField => numberField
-                        .setDataType("Int")
-                        .setMin(0)
-                        .setValue(4)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Space")
-                    .addComboBox(comboBox => comboBox
-                        .setValue(0)
-                        .addOptions([
-                            { first: 0, second: "Parameter Space" },
-                            { first: 1, second: "Julia Space" },
-                        ])
-                    )
-                )
-            )
-        )
-    )
-    .addTab(tab => tab
-        .setIcon(arrowsOutputIcon)
-        .addSegment(segmnent => segmnent
-            .addNormalGroup(group => group
-                .setText("Trasform")
-                .addElement(element => element
-                    .setText("Traslation")
-                    .addNumberField()
-                    .addNumberField()
-                )
-                .addElement(element => element
-                    .setText("Zoom")
-                    .addNumberField(numberField => numberField
-                        .setValue(0.005)
-                    )
-                )
-                .addElement(element => element
-                    .setText("Rotation")
-                    .addNumberField()
-                )
-            )
-        )
-    )
-    .addTab(tab => tab
-        .setIcon(paletteIcon)
-        .addSegment(segmnent => segmnent
-            .addColorPaletteGroup(group => DEFAULT_PALETTE
-                .reduce((group, cur) => group
-                    .addColorPaletteElement(group => group
-                        .setColor(cur.color)
+                    .addElement(element => element
+                        .setText("Escape Radius")
                         .addNumberField(numberField => numberField
                             .setMin(0.0)
-                            .setMax(1.0)
-                            .setValue(cur.value)
+                            .setMax(2.0)
+                            .setValue(2.0)
                         )
-                        .addButton(button => button
-                            .setIcon(angleUpIcon)
+                    )
+                    .addElement(element => element
+                        .setText("Maximum Iterations")
+                        .addNumberField(numberField => numberField
+                            .setDataType("Int")
+                            .setMin(0)
+                            .setValue(200)
                         )
-                        .addButton(button => button
-                            .setIcon(angleDownIcon)
-                        )   
-                        .addButton(button => button
-                            .setIcon(plusIcon)
+                    )
+                    .addElement(element => element
+                        .setText("Step")
+                        .addNumberField(numberField => numberField
+                            .setDataType("Int")
+                            .setMin(0)
+                            .setValue(4)
                         )
-                    ), 
-                    group.setText("Color Theme")
+                    )
+                    .addElement(element => element
+                        .setText("Detail Level")
+                        .addNumberField(numberField => numberField
+                            .setDataType("Int")
+                            .setMin(0)
+                            .setValue(20)
+                        )
+                    )
+                    .addElement(element => element
+                        .setText("Maximum Detail Level")
+                        .addNumberField(numberField => numberField
+                            .setDataType("Int")
+                            .setMin(0)
+                            .setValue(4)
+                        )
+                    )
+                    .addElement(element => element
+                        .setText("Space")
+                        .addComboBox(comboBox => comboBox
+                            .setValue(0)
+                            .addOptions([
+                                { first: 0, second: "Parameter Space" },
+                                { first: 1, second: "Julia Space" },
+                            ])
+                        )
+                    )
                 )
             )
         )
-    )
-    .build();
+        .addTab(tab => tab
+            .setIcon(arrowsOutputIcon)
+            .addSegment(segmnent => segmnent
+                .addNormalGroup(group => group
+                    .setText("Trasform")
+                    .addElement(element => element
+                        .setText("Traslation")
+                        .addNumberField()
+                        .addNumberField()
+                    )
+                    .addElement(element => element
+                        .setText("Zoom")
+                        .addNumberField(numberField => numberField
+                            .setValue(0.005)
+                        )
+                    )
+                    .addElement(element => element
+                        .setText("Rotation")
+                        .addNumberField(numberField => numberField
+                            .setMin(0)
+                            .setMax(2 * Math.PI)
+                            .setValue(0)
+                        )
+                    )
+                )
+            )
+        )
+        .addTab(tab => tab
+            .setIcon(paletteIcon)
+            .addSegment(segmnent => segmnent
+                .addColorPaletteGroup(group => DEFAULT_PALETTE
+                    .reduce((group, cur) => group
+                        .addColorPaletteElement(group => group
+                            .setColor(cur.color)
+                            .addNumberField(numberField => numberField
+                                .setMin(0.0)
+                                .setMax(1.0)
+                                .setValue(cur.value)
+                            )
+                            .addButton(button => button
+                                .setIcon(angleUpIcon)
+                            )
+                            .addButton(button => button
+                                .setIcon(angleDownIcon)
+                            )   
+                            .addButton(button => button
+                                .setIcon(plusIcon)
+                            )
+                        ), 
+                        group.setText("Color Theme")
+                    )
+                )
+            )
+        )
+        .addTab(tab => tab
+            .setIcon(settingsIcon)
+            .addSegment(segment => segment
+                .addNormalGroup(group => group
+                    .setText("Settings")
+                    .addElement(element => element
+                        .setText("Model Actions")
+                        .addButton(button => button
+                            .setText("Reload")
+                        )
+                    )
+                )
+            )
+        )
+        .build();
+}
+
+export const sideBar: Ref<SideBar> = ref(create());
+
+export function reset(sideBar: Ref<SideBar>) {
+    sideBar.value = create();
+}
 
 export const Tabs = {
     Parameters:         tabByIndex(sideBar, 0)!.id,
     Transform:          tabByIndex(sideBar, 1)!.id,
     ColorPalette:       tabByIndex(sideBar, 2)!.id,
+    Settings:           tabByIndex(sideBar, 3)!.id,
 } as const;
 export type Tabs = typeof Tabs[keyof typeof Tabs];
 
@@ -149,6 +178,7 @@ export const Segments = {
     Parameters:         segmentByIndex(sideBar, 0, 0)!.id,
     Transform:          segmentByIndex(sideBar, 1, 0)!.id,
     ColorPalette:       segmentByIndex(sideBar, 2, 0)!.id,
+    Settings:           segmentByIndex(sideBar, 3, 0)!.id,
 } as const;
 export type Segments = typeof Segments[keyof typeof Segments];
 
@@ -156,6 +186,7 @@ export const Groups = {
     Parameters:         groupByIndex(sideBar, 0, 0, 0)!.id,
     Trasform:           groupByIndex(sideBar, 1, 0, 0)!.id,
     ColorTheme:         groupByIndex(sideBar, 2, 0, 0)!.id,
+    Settings:           groupByIndex(sideBar, 3, 0, 0)!.id,
 } as const;
 export type Groups = typeof Groups[keyof typeof Groups];
 
@@ -171,6 +202,7 @@ export const Elements = {
     Traslation:         elementByIndex(sideBar, 1, 0, 0, 0)!.id,
     Zoom:               elementByIndex(sideBar, 1, 0, 0, 1)!.id,
     Rotation:           elementByIndex(sideBar, 1, 0, 0, 2)!.id,
+    ModelActions:       elementByIndex(sideBar, 3, 0, 0, 0)!.id,
 } as const;
 export type Elements = typeof Elements[keyof typeof Elements];
 
@@ -187,6 +219,7 @@ export const Controls = {
     TraslationY:        controlByIndex(sideBar, 1, 0, 0, 0, 1)!.id,
     Zoom:               controlByIndex(sideBar, 1, 0, 0, 1, 0)!.id,
     Rotation:           controlByIndex(sideBar, 1, 0, 0, 2, 0)!.id,
+    ModelActions:       controlByIndex(sideBar, 3, 0, 0, 0, 0)!.id,
 
     InterpolatorValue:  0,
     SwapAbove:          1,

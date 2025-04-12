@@ -1,7 +1,7 @@
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, type Ref } from 'vue';
 
-function saveStateToLocalStorage(stateKey: string, state: any) {
-  localStorage.setItem(stateKey, JSON.stringify(state));
+function saveStateToLocalStorage<T>(stateKey: string, state: Ref<T>) {
+  localStorage.setItem(stateKey, JSON.stringify(state.value));
 }
 
 function loadStateFromLocalStorage<T>(stateKey: string): T | null {
@@ -9,18 +9,26 @@ function loadStateFromLocalStorage<T>(stateKey: string): T | null {
   return savedState ? JSON.parse(savedState) : null;
 }
 
-export function usePersistState<T>(stateKey: string, initialState: T, enabled: boolean = true) {
-    const state = ref<T>(enabled ? (loadStateFromLocalStorage<T>(stateKey) || initialState) : initialState);
+export function usePersistState<T>(stateKey: string, initialState: Ref<T>, enabled: boolean = true) {
+    const createState = () => {
+        if (enabled) {
+            const loadedState = loadStateFromLocalStorage<T>(stateKey);
+            return loadedState ? ref<T>(loadedState) : initialState;
+        } else {
+            return initialState;
+        }
+    }
+
+    const state = createState();
 
     const saveState = () => {
         if (enabled) {
-            saveStateToLocalStorage(stateKey, state.value);
+            saveStateToLocalStorage(stateKey, state);
         }
     };
 
     const handleBeforeUnload = () => {
         if (enabled) {
-            console.info("handleBeforeUnload");
             saveState();
         }
     };

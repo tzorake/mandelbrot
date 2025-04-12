@@ -28,7 +28,14 @@ function hsv(c: tz.Color) {
 }
 
 function hex(c: tz.Color) {
-    return `#${(c >>> 0).toString(16).padStart(8, "0")}`;
+    const a = tz.alpha(c);
+    const b = tz.blue(c);
+    const g = tz.green(c);
+    const r = tz.red(c);
+
+    const rgba = (r << 24) | (g << 16) | (b << 8) | (a << 0);
+
+    return `#${(rgba >>> 0).toString(16).padStart(8, "0")}`;
 }
 
 const props = defineProps<{ color: tz.Color, wheelRadius: number, pointerSize: number }>();

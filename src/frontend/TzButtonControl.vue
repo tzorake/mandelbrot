@@ -14,8 +14,8 @@ function onClick() {
 
 <template>
 <button class="button" @click="onClick">
-	<div class="button__icon">
-		<TzIconLoader v-if="props.icon != undefined" :icon="props.icon"></TzIconLoader>
+	<div class="button__icon" v-if="props.icon != undefined">
+		<TzIconLoader :icon="props.icon"></TzIconLoader>
 	</div>
 	<div class="button__text">{{ props.text }}</div>
 </button>

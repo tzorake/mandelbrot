@@ -38,7 +38,7 @@ function onColorInput(elementId: number, value: tz.Color) {
 
 <template>
 <div class="group" :style="{ gap: props.expanded ? '10px' : '0px' }">
-    <div class="group__header">
+    <div class="group__header" v-if="props.text != ''">
         <div class="group__toggle" @click="onExpanded">
             <TzIconLoader :icon="badgeIcon" />
         </div>

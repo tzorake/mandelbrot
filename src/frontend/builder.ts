@@ -1,3 +1,4 @@
+import type { Ref } from "vue";
 import { tz } from "../backend/color.ts";
 import type { ButtonControl, CheckBoxControl, ColorPaletteElement, ColorPaletteGroup, ComboBoxControl, ComboBoxControlOption, Control, Element, Group, NumberFieldControl, Segment, SideBar, Tab } from "./types.ts";
 
@@ -482,17 +483,17 @@ export class ButtonControlBuilder {
     }
 }
 
-export function tabByIndex(sideBar: SideBar, tabIndex: number): Tab | null {
-    const tab = sideBar.tabs[tabIndex];
+export function tabByIndex(sideBar: Ref<SideBar>, tabIndex: number): Tab | null {
+    const tab = sideBar.value.tabs[tabIndex];
     if (!tab) {
-        console.error(`Tab index ${tabIndex} is out of bounds. There are ${sideBar.tabs.length} tabs.`);
+        console.error(`Tab index ${tabIndex} is out of bounds. There are ${sideBar.value.tabs.length} tabs.`);
         return null;
     }
 
     return tab;
 }
 
-export function segmentByIndex(sideBar: SideBar, tabIndex: number, segmentIndex: number): Segment | null {
+export function segmentByIndex(sideBar: Ref<SideBar>, tabIndex: number, segmentIndex: number): Segment | null {
     const tab = tabByIndex(sideBar, tabIndex);
     if (!tab) {
         return null;
@@ -507,7 +508,7 @@ export function segmentByIndex(sideBar: SideBar, tabIndex: number, segmentIndex:
     return segment;
 }
 
-export function groupByIndex(sideBar: SideBar, tabIndex: number, segmentIndex: number, groupIndex: number): Group | ColorPaletteGroup | null {
+export function groupByIndex(sideBar: Ref<SideBar>, tabIndex: number, segmentIndex: number, groupIndex: number): Group | ColorPaletteGroup | null {
     const segment = segmentByIndex(sideBar, tabIndex, segmentIndex);
     if (!segment) {
         return null;
@@ -522,7 +523,7 @@ export function groupByIndex(sideBar: SideBar, tabIndex: number, segmentIndex: n
     return group;
 }
 
-export function elementByIndex(sideBar: SideBar, tabIndex: number, segmentIndex: number, groupIndex: number, elementIndex: number): Element | ColorPaletteElement | null {
+export function elementByIndex(sideBar: Ref<SideBar>, tabIndex: number, segmentIndex: number, groupIndex: number, elementIndex: number): Element | ColorPaletteElement | null {
     const group = groupByIndex(sideBar, tabIndex, segmentIndex, groupIndex);
     if (!group) {
         return null;
@@ -537,7 +538,7 @@ export function elementByIndex(sideBar: SideBar, tabIndex: number, segmentIndex:
     return element;
 }
 
-export function controlByIndex<T extends Control>(sideBar: SideBar, tabIndex: number, segmentIndex: number, groupIndex: number, elementIndex: number, controlIndex: number): T | null {
+export function controlByIndex<T extends Control>(sideBar: Ref<SideBar>, tabIndex: number, segmentIndex: number, groupIndex: number, elementIndex: number, controlIndex: number): T | null {
     const element = elementByIndex(sideBar, tabIndex, segmentIndex, groupIndex, elementIndex);
     if (!element) {
         return null;
@@ -552,11 +553,11 @@ export function controlByIndex<T extends Control>(sideBar: SideBar, tabIndex: nu
     return control as T;
 }
 
-export function tabById(sideBar: SideBar, tabId: number): Tab | undefined {
-    return sideBar.tabs.find(item => item.id === tabId);
+export function tabById(sideBar: Ref<SideBar>, tabId: number): Tab | undefined {
+    return sideBar.value.tabs.find(item => item.id === tabId);
 }
 
-export function segmentById(sideBar: SideBar, tabId: number, segmentId: number): Segment | undefined {
+export function segmentById(sideBar: Ref<SideBar>, tabId: number, segmentId: number): Segment | undefined {
     const tab = tabById(sideBar, tabId);
     if (!tab) 
         return undefined;
@@ -564,7 +565,7 @@ export function segmentById(sideBar: SideBar, tabId: number, segmentId: number):
     return tab.segments.find(item => item.id === segmentId);
 }
 
-export function groupById<T>(sideBar: SideBar, tabId: number, segmentId: number, groupId: number): T | undefined {
+export function groupById<T>(sideBar: Ref<SideBar>, tabId: number, segmentId: number, groupId: number): T | undefined {
     const seg = segmentById(sideBar, tabId, segmentId);
     if (!seg) 
         return undefined;
@@ -572,7 +573,7 @@ export function groupById<T>(sideBar: SideBar, tabId: number, segmentId: number,
     return seg.groups.find(item => item.id === groupId) as (T | undefined);
 }
 
-export function elementById<T>(sideBar: SideBar, tabId: number, segmentId: number, groupId: number, elementId: number): T | undefined {
+export function elementById<T>(sideBar: Ref<SideBar>, tabId: number, segmentId: number, groupId: number, elementId: number): T | undefined {
     const gr = groupById<Group>(sideBar, tabId, segmentId, groupId);
     if (!gr) 
         return undefined;
@@ -580,7 +581,7 @@ export function elementById<T>(sideBar: SideBar, tabId: number, segmentId: numbe
     return gr.elements.find(item => item.id === elementId) as (T | undefined);
 }
 
-export function controlById<T extends Control>(sideBar: SideBar, tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number): T | undefined {
+export function controlById<T extends Control>(sideBar: Ref<SideBar>, tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number): T | undefined {
     const elem = elementById<Element | ColorPaletteElement>(sideBar, tabId, segmentId, groupId, elementId);
     if (!elem) 
         return undefined;

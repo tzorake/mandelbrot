@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import TzCanvasView from './frontend/TzCanvasView.vue';
+import TzCanvasViewJS from './frontend/TzCanvasViewJS.vue';
+import TzCanvasViewWASM from './frontend/TzCanvasViewWASM.vue';
 import TzSideBar from './frontend/TzSideBar.vue';
-import { Controls, Elements, Groups, Segments, sideBar as sideBarInitialState, Tabs } from './frontend/models.ts';
+import { Controls, Elements, Groups, reset, Segments, sideBar as sideBarInitialState, Tabs } from './frontend/models.ts';
 import { Space, type ColorPaletteGroup, type ComboBoxControl, type Control, type Group, type NumberFieldControl, type SideBar } from './frontend/types.ts';
 import { usePersistState } from './frontend/usePersistState.ts';
 import { angleDownIcon, angleUpIcon, plusIcon } from './frontend/icons.ts';
 import { tz } from './backend/color.ts';
 import { ColorPaletteElementBuilder, controlById, groupById } from './frontend/builder.ts';
 
-const ENABLE_LOCAL_STORAGE = false;
+const ENABLE_LOCAL_STORAGE = true;
 const SIDE_BAR_KEY = "SideBar";
 
 const { state: sideBar } = usePersistState<SideBar>(SIDE_BAR_KEY, sideBarInitialState, ENABLE_LOCAL_STORAGE);
@@ -26,10 +27,10 @@ function firstAvailableId(items: { id: number }[]): number {
 }
 
 function pseudoRandom(seed: number) {
-  const a = 1664525;
-  const c = 1013904223;
-  const m = 2 ** 32;
-  return (a * seed + c) % m;
+    const a = 1664525;
+    const c = 1013904223;
+    const m = 2 ** 32;
+    return (a * seed + c) % m;
 }
 
 function randomColorFromId(id: number): tz.Color {
@@ -41,7 +42,7 @@ function randomColorFromId(id: number): tz.Color {
 }
 
 const realPart = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.RealPart, Controls.RealPart);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.RealPart, Controls.RealPart);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -50,7 +51,7 @@ const realPart = computed(() => {
     return ctl.value;
 });
 const imagPart = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.ImaginaryPart, Controls.ImaginaryPart);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.ImaginaryPart, Controls.ImaginaryPart);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -59,7 +60,7 @@ const imagPart = computed(() => {
     return ctl.value;
 });
 const escapeRadius = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.EscapeRadius, Controls.EscapeRadius);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.EscapeRadius, Controls.EscapeRadius);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -68,7 +69,7 @@ const escapeRadius = computed(() => {
     return ctl.value;
 });
 const maximumIterations = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumIterations, Controls.MaximumIterations);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumIterations, Controls.MaximumIterations);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 0.0;
@@ -78,7 +79,7 @@ const maximumIterations = computed(() => {
 });
 const step = computed({
     get() {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 0;
@@ -87,7 +88,7 @@ const step = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Step, Controls.Step);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -97,7 +98,7 @@ const step = computed({
     }
 });
 const detailLevel = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.DetailLevel, Controls.DetailLevel);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.DetailLevel, Controls.DetailLevel);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 1;
@@ -106,7 +107,7 @@ const detailLevel = computed(() => {
     return ctl.value;
 });
 const maximumDetailLevel = computed(() => {
-    const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumDetailLevel, Controls.MaximumDetailLevel);
+    const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.MaximumDetailLevel, Controls.MaximumDetailLevel);
     if (ctl == null) {
         console.error("control should return a valid object");
         return 1;
@@ -115,7 +116,7 @@ const maximumDetailLevel = computed(() => {
     return ctl.value;
 });
 const space = computed(() => {
-    const ctl = controlById<ComboBoxControl>(sideBar.value, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Space, Controls.Space);
+    const ctl = controlById<ComboBoxControl>(sideBar, Tabs.Parameters, Segments.Parameters, Groups.Parameters, Elements.Space, Controls.Space);
     if (ctl == null) {
         console.error("control should return a valid object");
         return Space.PARAMETER_SPACE;
@@ -126,7 +127,7 @@ const space = computed(() => {
 
 const translationX = computed({
     get() {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -135,7 +136,7 @@ const translationX = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationX);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -146,7 +147,7 @@ const translationX = computed({
 });
 const translationY = computed({
     get() {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -155,7 +156,7 @@ const translationY = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Traslation, Controls.TraslationY);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -166,7 +167,7 @@ const translationY = computed({
 });
 const zoom = computed({
     get() {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -175,7 +176,7 @@ const zoom = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Zoom, Controls.Zoom);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -186,7 +187,7 @@ const zoom = computed({
 });
 const radians = computed({
     get() {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
         if (ctl == null) {
             console.error("control should return a valid object");
             return 1;
@@ -195,7 +196,7 @@ const radians = computed({
         return ctl.value;
     },
     set(value: number) {
-        const ctl = controlById<NumberFieldControl>(sideBar.value, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
+        const ctl = controlById<NumberFieldControl>(sideBar, Tabs.Transform, Segments.Transform, Groups.Trasform, Elements.Rotation, Controls.Rotation);
         if (ctl == null) {
             console.error("control should return a valid object");
             return;
@@ -206,7 +207,7 @@ const radians = computed({
 });
 
 const palette = computed(() => {
-    const gr = groupById<ColorPaletteGroup>(sideBar.value, Tabs.ColorPalette, Segments.ColorPalette, Groups.ColorTheme)
+    const gr = groupById<ColorPaletteGroup>(sideBar, Tabs.ColorPalette, Segments.ColorPalette, Groups.ColorTheme)
     if (gr == null) {
         console.error("control should return a valid object");
         return [];
@@ -224,7 +225,7 @@ function onSideBarExpandedChanged(value: boolean) {
 }
 
 function onGroupExpandedChanged(tabId: number, segmentId: number, groupId: number, value: boolean) {
-    const gr = groupById<Group | ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
+    const gr = groupById<Group | ColorPaletteGroup>(sideBar, tabId, segmentId, groupId);
     if (!gr)
         return;
 
@@ -232,7 +233,7 @@ function onGroupExpandedChanged(tabId: number, segmentId: number, groupId: numbe
 }
 
 function onNumberInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: number) {
-    const ctl = controlById(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById(sideBar, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 
@@ -252,7 +253,7 @@ function onNumberInput(tabId: number, segmentId: number, groupId: number, elemen
 }
 
 function onBooleanInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: boolean) {
-    const ctl = controlById<Control>(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById<Control>(sideBar, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 
@@ -273,9 +274,8 @@ function onBooleanInput(tabId: number, segmentId: number, groupId: number, eleme
 
 function onButtonClicked(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, _: boolean) {
     if (tabId === Tabs.ColorPalette && segmentId === Segments.ColorPalette && groupId === Groups.ColorTheme) {
-        console.info(tabId, segmentId, groupId, elementId, controlId)
         if (controlId === Controls.SwapAbove) {
-            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
+            const gr = groupById<ColorPaletteGroup>(sideBar, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -294,7 +294,7 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
         }
 
         if (controlId === Controls.SwapBelow) {
-            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
+            const gr = groupById<ColorPaletteGroup>(sideBar, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -313,7 +313,7 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
         }
 
         if (controlId === Controls.AddColor) {
-            const gr = groupById<ColorPaletteGroup>(sideBar.value, tabId, segmentId, groupId);
+            const gr = groupById<ColorPaletteGroup>(sideBar, tabId, segmentId, groupId);
             if (gr == null)
                 return;
 
@@ -324,10 +324,12 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
             const takeNext = firstIndex + 1 < gr.elements.length;
             const secondIndex = takeNext ? firstIndex + 1 : firstIndex - 1;
             
-            const first = (gr.elements[firstIndex].controls[0] as NumberFieldControl).value;
-            const second = (gr.elements[secondIndex].controls[0] as NumberFieldControl).value;
+            const first = controlById<NumberFieldControl>(sideBar, tabId, segmentId, groupId, firstIndex, Controls.InterpolatorValue);
+            const second = controlById<NumberFieldControl>(sideBar, tabId, segmentId, groupId, secondIndex, Controls.InterpolatorValue);
+            if (first == null || second == null)
+                return;
 
-            const value = (takeNext ? second + first : first + second) / 2;
+            const value = (takeNext ? second.value + first.value : first.value + second.value) / 2;
 
             const id = firstAvailableId(gr.elements);
             const elem = new ColorPaletteElementBuilder(id)
@@ -351,10 +353,14 @@ function onButtonClicked(tabId: number, segmentId: number, groupId: number, elem
             gr.elements.splice(takeNext ? secondIndex : firstIndex, 0, elem);
         }
     }
+
+    if (tabId === Tabs.Settings && segmentId === Segments.Settings && groupId === Groups.Settings && elementId === Elements.ModelActions && controlId === Controls.ModelActions) {
+        reset(sideBar);
+    }
 }
 
 function onStringInput(tabId: number, segmentId: number, groupId: number, elementId: number, controlId: number, value: string) {
-    const ctl = controlById<Control>(sideBar.value, tabId, segmentId, groupId, elementId, controlId);
+    const ctl = controlById<Control>(sideBar, tabId, segmentId, groupId, elementId, controlId);
     if (!ctl) 
         return;
 
@@ -422,7 +428,7 @@ function onRadiansChanged(value: number) {
 	@control:string="onStringInput"
 	@control:color="onColorChanged"
 />
-<TzCanvasView
+<TzCanvasViewWASM
     :realPart="realPart"
     :imagPart="imagPart"
     :escapeRadius="escapeRadius"

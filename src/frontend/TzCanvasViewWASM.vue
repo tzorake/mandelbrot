@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { WASI } from '@bjorn3/browser_wasi_shim';
 import { computed, onMounted, onUnmounted, useTemplateRef, watch } from 'vue';
-import { Space, type CanvasView, type PaletteEntry } from './types.ts';
+import type { CanvasView, PaletteEntry } from './types.ts';
 import { tz } from '../backend/color.ts';
-import { WASI } from "../backend/browser_wasi_shim.mjs";
+import { TweenController } from './controllers.ts';
 
 const props = defineProps<CanvasView>();
 const emit = defineEmits<{
@@ -13,33 +14,13 @@ const emit = defineEmits<{
     (e: "radians", value: number): void,
 }>();
 
+const tweenController = new TweenController();
+const TWEEN_DURATION = 300;
+
 const canvasElement = useTemplateRef("canvasElement");
 const fpsElement = useTemplateRef("fpsElement");
 
-// let realPart = computed(() => props.realPart);
-// let imagPart = computed(() => props.imagPart);
-// let escapeRadius = computed(() => props.escapeRadius);
-// let maximumIterations = computed(() => props.maximumIterations);
-// let detailLevel = computed(() => props.detailLevel);
-// let maximumDetailLevel = computed(() => props.maximumDetailLevel);
-// let space = computed(() => props.space);
 let palette = computed(() => props.palette);
-
-// let translationX = computed(() => props.translationX);
-// let translationY = computed(() => props.translationY);
-
-// let zoom = computed(() => props.zoom);
-// let radians = computed(() => props.radians);
-// let step = computed(() => props.step);
-
-// const escapeRadiusSquared = computed(() => escapeRadius.value * escapeRadius.value);
-// const cosine = computed(() => Math.cos(radians.value));
-// const sine = computed(() => Math.sin(radians.value));
-
-
-
-
-
 
 let previousTranslationX = 0;
 let previousTranslationY = 0;
@@ -102,37 +83,66 @@ function interpolate(t: number): tz.Color {
 	return tz.mix(prevColor, nextColor, (t - t0) / (t1 - t0));
 }
 
-const w = new WASI([], [], []);
-const exportObject = {
-	tzjs_interpolate: interpolate,
-};
-const importObject = {
-    wasi_snapshot_preview1: w.wasiImport,
-    env: {
-        memory: new WebAssembly.Memory({initial: 10, maximum: 1024 }),
-        ...exportObject,
+type WasmExports = {
+	memory: WebAssembly.Memory;
+	compute: () => boolean;
+	main: (argc: number, argv: number) => void;
+	pixelsLen: () => number;
+	pixelsPtr: () => number;
+	setSize: (width: number, heihgt: number) => void;
+	setRealPart: (realPart: number) => void;
+	setImagPart: (imagPart: number) => void;
+	setEscapeRadiusSquared: (escapeRadiusSquared: number) => void;
+	setMaximumIterations: (maximumIterations: number) => void;
+	setStep: (step: number) => void;
+	setDetailLevel: (detailLevel: number) => void;
+	setMaximumDetailLevel: (maximumDetailLevel: number) => void;
+	setSpace: (space: number) => void;
+	setTranslationX: (translationX: number) => void;
+	setTranslationY: (translationY: number) => void;
+	setZoom: (zoom: number) => void;
+	setRotation: (radians: number) => void;
+	__heap_base: WebAssembly.Global;
+	__indirect_function_table: WebAssembly.Table;
+	_start: () => void;
+} 
 
-		__cxa_allocate_exception(size: number) {
-            console.warn(`__cxa_allocate_exception called with size: ${size}`);
+const wasi = new WASI([], [], []);
+function wasiExports() {
+	return wasi.inst.exports as WasmExports;
+}
 
-            return 0;
-        },
-        __cxa_throw(ptr: number, type: number, destructor: number) {
-            console.error(`__cxa_throw called with ptr: ${ptr}, type: ${type}, destructor: ${destructor}`);
-
-            throw new Error('__cxa_throw was called but is stubbed.');
-        },
-        __cxa_free_exception(exception: number) {
-            console.log("Stubbed __cxa_free_exception:", exception);
-        },
-    },
+type WasmInstance = {
+	exports: {
+		memory: WebAssembly.Memory;
+		_start: () => unknown;
+	};
 };
 
 async function start() {
     try {
-		const response = await fetch("/src/backend/main.wasm");
-		const buffer = await response.arrayBuffer();
-		await WebAssembly.instantiate(buffer, importObject).then(res => w.start(res.instance));
+		const wasm = await WebAssembly.compileStreaming(fetch("/src/backend/main.wasm"));
+		const inst = await WebAssembly.instantiate(wasm, {
+			wasi_snapshot_preview1: wasi.wasiImport,
+			env: {
+				tzjs_interpolate: interpolate,
+
+				__cxa_allocate_exception(size: number) {
+					console.warn(`__cxa_allocate_exception called with size: ${size}`);
+
+					return 0;
+				},
+				__cxa_throw(ptr: number, type: number, destructor: number) {
+					console.error(`__cxa_throw called with ptr: ${ptr}, type: ${type}, destructor: ${destructor}`);
+
+					throw new Error('__cxa_throw was called but is stubbed.');
+				},
+				__cxa_free_exception(exception: number) {
+					console.warn("Stubbed __cxa_free_exception:", exception);
+				},
+			},
+		});
+		wasi.start(inst as WasmInstance);
     } catch (e) {
         console.error(e);
     }
@@ -148,19 +158,21 @@ onMounted(async () => {
 	}
 
 	await start();
-		
-	w.inst.exports.setRealPart(props.realPart);
-	w.inst.exports.setImagPart(props.imagPart);
-	w.inst.exports.setEscapeRadiusSquared(props.escapeRadius * props.escapeRadius);
-	w.inst.exports.setMaximumIterations(props.maximumIterations);
-	w.inst.exports.setStep(props.step);
-	w.inst.exports.setDetailLevel(props.detailLevel);
-	w.inst.exports.setMaximumDetailLevel(props.maximumDetailLevel);
-	w.inst.exports.setSpace(props.space);
-	w.inst.exports.setTranslationX(props.translationX);
-	w.inst.exports.setTranslationY(props.translationY);
-	w.inst.exports.setZoom(props.zoom);
-	w.inst.exports.setRotation(props.radians);
+	
+	const exports = wasiExports();
+
+	exports.setRealPart(props.realPart);
+	exports.setImagPart(props.imagPart);
+	exports.setEscapeRadiusSquared(props.escapeRadius * props.escapeRadius);
+	exports.setMaximumIterations(props.maximumIterations);
+	exports.setStep(props.step);
+	exports.setDetailLevel(props.detailLevel);
+	exports.setMaximumDetailLevel(props.maximumDetailLevel);
+	exports.setSpace(props.space);
+	exports.setTranslationX(props.translationX);
+	exports.setTranslationY(props.translationY);
+	exports.setZoom(props.zoom);
+	exports.setRotation(props.radians);
 
 	ctx = canvasElement.value.getContext("2d");
 
@@ -171,18 +183,18 @@ onMounted(async () => {
 	animationFrameHandle = requestAnimationFrame(renderLoop);
 });
 
-watch(() => props.realPart, value => w.inst.exports.setRealPart(value));
-watch(() => props.imagPart, value => w.inst.exports.setImagPart(value));
-watch(() => props.escapeRadius, value => w.inst.exports.setEscapeRadiusSquared(value * value));
-watch(() => props.maximumIterations, value => w.inst.exports.setMaximumIterations(value));
-watch(() => props.step, value => w.inst.exports.setStep(value));
-watch(() => props.detailLevel, value => w.inst.exports.setDetailLevel(value));
-watch(() => props.maximumDetailLevel, value => w.inst.exports.setMaximumDetailLevel(value));
-watch(() => props.space, value => w.inst.exports.setSpace(value));
-watch(() => props.translationX, value => w.inst.exports.setTranslationX(value));
-watch(() => props.translationY, value => w.inst.exports.setTranslationY(value));
-watch(() => props.zoom, value => w.inst.exports.setZoom(value));
-watch(() => props.radians, value => w.inst.exports.setRotation(value));
+watch(() => props.realPart, value => wasiExports().setRealPart(value));
+watch(() => props.imagPart, value => wasiExports().setImagPart(value));
+watch(() => props.escapeRadius, value => wasiExports().setEscapeRadiusSquared(value * value));
+watch(() => props.maximumIterations, value => wasiExports().setMaximumIterations(value));
+watch(() => props.step, value => wasiExports().setStep(value));
+watch(() => props.detailLevel, value => wasiExports().setDetailLevel(value));
+watch(() => props.maximumDetailLevel, value => wasiExports().setMaximumDetailLevel(value));
+watch(() => props.space, value => wasiExports().setSpace(value));
+watch(() => props.translationX, value => wasiExports().setTranslationX(value));
+watch(() => props.translationY, value => wasiExports().setTranslationY(value));
+watch(() => props.zoom, value => wasiExports().setZoom(value));
+watch(() => props.radians, value => wasiExports().setRotation(value));
 
 onUnmounted(() => {
 	cancelAnimationFrame(animationFrameHandle);
@@ -199,17 +211,27 @@ function onCanvasResized() {
 	canvasElement.value.height = rect.height;
 	const [canvasWidth, canvasHeight] = [canvasElement.value.width, canvasElement.value.height];
 
-	w.inst.exports.setSize(canvasWidth, canvasHeight);
+	const exports = wasiExports();
 
-	pixels = new Uint8ClampedArray(w.inst.exports.memory.buffer, w.inst.exports.pixelsPtr(), 4*w.inst.exports.pixelsLen());
+	exports.setSize(canvasWidth, canvasHeight);
+
+	pixels = new Uint8ClampedArray(exports.memory.buffer, exports.pixelsPtr(), 4*exports.pixelsLen());
 	imageData =  new ImageData(pixels, canvasWidth, canvasHeight);
 }
+
+const ZOOM_RATIO = 7 / 12;
+const INVERTED_ZOOM_RATIO = 1 / ZOOM_RATIO;
+const easeInOutQuad = (t: number): number => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
 
 function onWheel(event: WheelEvent): void {
     event.preventDefault();
 
 	emit("step", props.detailLevel);
-	emit("zoom", event.deltaY >= 0 ? props.zoom * 10 / 11 : props.zoom * 11 / 10);
+
+	const zoom = props.zoom;
+	const newZoom = event.deltaY >= 0 ? props.zoom * ZOOM_RATIO : props.zoom * INVERTED_ZOOM_RATIO;
+
+	tweenController.addTween("zoom", zoom, newZoom, TWEEN_DURATION, easeInOutQuad);
 }
 
 function onMouseDown(event: MouseEvent): void {
@@ -256,8 +278,9 @@ function onMouseMove(event: MouseEvent): void {
 	}
 }
 
+
 function update(_: number) {
-	if (w.inst.exports.compute()) {
+	if (wasiExports().compute()) {
 		const newStep = Math.max(props.step - 1, props.maximumDetailLevel)
 		if (newStep !== props.step) {
 			emit("step", newStep);
@@ -295,6 +318,12 @@ let prevoiusTimestamp = 0;
 function renderLoop(timestamp: number) {
     animationFrameHandle = requestAnimationFrame(renderLoop);
 
+    const values = tweenController.update(timestamp);
+
+    if (values.has("zoom")) {
+        emit("zoom", values.get("zoom")!);
+    }
+
 	const deltaTime = timestamp - prevoiusTimestamp;
     prevoiusTimestamp = timestamp;
 
@@ -302,6 +331,72 @@ function renderLoop(timestamp: number) {
     render(deltaTime);
 
 	updateFps(timestamp);
+}
+
+/////////////////////////////////////////////////
+
+function onTouchStart(event: TouchEvent): void {
+    event.preventDefault();
+    if (event.touches.length === 1) {
+        isLeftButtonPressed = true;
+		isAltKeyPressed = event.altKey;
+		startX = event.touches[0].clientX;
+        startY = event.touches[0].clientY;
+		previousTranslationX = props.translationX;
+		previousTranslationY = props.translationY;
+		previousRadians = props.radians;
+    }
+	else if (event.touches.length === 2) {
+        const [touch1, touch2] = Array.from(event.touches);
+        previousTouchDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        previousTouchAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+    }
+}
+
+let previousTouchDistance: number | null = null;
+let previousTouchAngle: number | null = null;
+
+function onTouchMove(event: TouchEvent): void {
+    event.preventDefault();
+
+    if (!canvasElement.value || startX === null || startY === null)
+		return;
+
+    if (event.touches.length === 1 && isLeftButtonPressed) {
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - startX;
+        const deltaY = touch.clientY - startY;
+        emit("step", props.detailLevel);
+        emit("translation:x", previousTranslationX - (Math.cos(-props.radians) * deltaX + Math.sin(-props.radians) * deltaY) * props.zoom);
+        emit("translation:y", previousTranslationY - (-Math.sin(-props.radians) * deltaX + Math.cos(-props.radians) * deltaY) * props.zoom);
+    } 
+	else if (event.touches.length === 2) {
+        const [touch1, touch2] = Array.from(event.touches);
+
+        const newTouchDistance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
+        const newTouchAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+
+        if (previousTouchDistance !== null && previousTouchAngle !== null) {
+            const zoomFactor = newTouchDistance / previousTouchDistance;
+            emit("zoom", props.zoom * zoomFactor);
+
+            const angleDelta = newTouchAngle - previousTouchAngle;
+            emit("radians", ((props.radians + angleDelta) % TWO_PI + TWO_PI) % TWO_PI);
+        }
+
+        previousTouchDistance = newTouchDistance;
+        previousTouchAngle = newTouchAngle;
+    }
+}
+
+function onTouchEnd(event: TouchEvent): void {
+    event.preventDefault();
+	isLeftButtonPressed = false;
+	isAltKeyPressed = false;
+	startX = null;
+	startY = null;
+	previousTouchDistance = null;
+	previousTouchAngle = null;
 }
 
 </script>
@@ -315,6 +410,9 @@ function renderLoop(timestamp: number) {
 		@mousedown="onMouseDown" 
 		@mouseup="onMouseUp" 
 		@mousemove="onMouseMove"
+		@touchstart="onTouchStart"
+		@touchmove="onTouchMove"
+		@touchend="onTouchEnd"
 	></canvas>
     <div class="stats">
         <div class="fps" ref="fpsElement"></div>

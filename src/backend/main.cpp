@@ -3,12 +3,12 @@
 
 #define wasm_export(name) __attribute__((used, visibility("default"), export_name(name)))
 
+extern "C" {
+
 int canvasWidth = 0;
 int canvasHeight = 0;
 
 std::vector<int> canvasPixels;
-
-extern "C" {
 
 enum Space : int {
     PARAMETER_SPACE,
@@ -105,12 +105,17 @@ int *pixelsPtr() {
 
 wasm_export("pixelsLen")
 int pixelsLen() {
-    return canvasPixels.size();
+    return canvasWidth * canvasHeight;
 }
 
-int tzjs_interpolate(double value);
+extern int tzjs_interpolate(double value);
 
-std::pair<int, double> mandelbrotImpl(double zx, double zy, double cx, double cy) {
+struct MandelbrotResult {
+    int iter; 
+    double l;
+};
+
+MandelbrotResult mandelbrotImpl(double zx, double zy, double cx, double cy) {
     int iter = 0;
     double l = zx * zx + zy * zy;
 
@@ -126,7 +131,7 @@ std::pair<int, double> mandelbrotImpl(double zx, double zy, double cx, double cy
     return { iter, l };
 }
 
-std::pair<int, double> mandelbrot(double zx, double zy, double cx, double cy) {
+MandelbrotResult mandelbrot(double zx, double zy, double cx, double cy) {
     return space == Space::PARAMETER_SPACE
         ? mandelbrotImpl(zx, zy, cx, cy)
         : mandelbrotImpl(cx, cy, zx, zy);
